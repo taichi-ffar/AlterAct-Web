@@ -28,8 +28,6 @@
       const loading = document.querySelector("#loading");
       const progress = document.querySelector("#progress-fill");
       const fullscreenButton = document.querySelector("#fullscreen-button");
-      const mobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const pixelRatioCap = mobileBrowser ? 1.5 : 2;
 
       function showBanner(message, type) {
         const warning = document.querySelector("#unity-warning");
@@ -41,14 +39,14 @@
 
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/439c5cb6034bdf941567a61e52ba60e7.data.unityweb",
+        dataUrl: "Build/4488f8118709a38783d25a372f2904ed.data.unityweb",
         frameworkUrl: "Build/0ae91e496e84b50aa96f07b66cd76f28.framework.js.unityweb",
         codeUrl: "Build/51279ca79b0bd7d36f0cc0c14a78f293.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "taichi-ffar",
         productName: "AlterAct",
         productVersion: "0.1.0",
-        devicePixelRatio: Math.min(window.devicePixelRatio || 1, pixelRatioCap),
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
         showBanner
       }, value => progress.style.width = `${Math.round(value * 100)}%`)
         .then(unityInstance => {
