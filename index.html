@@ -22,12 +22,14 @@
       <div id="unity-warning"></div>
       <button id="fullscreen-button" type="button" aria-label="全画面表示">⛶</button>
     </main>
-    <script src="Build/docs.loader.js"></script>
+    <script src="Build/2b616946fcce2589f3a7d5e2937a09e9.loader.js"></script>
     <script>
       const canvas = document.querySelector("#unity-canvas");
       const loading = document.querySelector("#loading");
       const progress = document.querySelector("#progress-fill");
       const fullscreenButton = document.querySelector("#fullscreen-button");
+      const mobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const pixelRatioCap = mobileBrowser ? 1.5 : 2;
 
       function showBanner(message, type) {
         const warning = document.querySelector("#unity-warning");
@@ -39,14 +41,14 @@
 
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/docs.data.unityweb",
-        frameworkUrl: "Build/docs.framework.js.unityweb",
-        codeUrl: "Build/docs.wasm.unityweb",
+        dataUrl: "Build/439c5cb6034bdf941567a61e52ba60e7.data.unityweb",
+        frameworkUrl: "Build/0ae91e496e84b50aa96f07b66cd76f28.framework.js.unityweb",
+        codeUrl: "Build/51279ca79b0bd7d36f0cc0c14a78f293.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "taichi-ffar",
         productName: "AlterAct",
         productVersion: "0.1.0",
-        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, pixelRatioCap),
         showBanner
       }, value => progress.style.width = `${Math.round(value * 100)}%`)
         .then(unityInstance => {
