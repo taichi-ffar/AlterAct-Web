@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AlterAct Technical Specification</title>
+  <style>
+    :root{--bg:#070b14;--surface:#0d1424;--surface2:#121d31;--line:#24354c;--text:#edf7ff;--muted:#9db0c3;--cyan:#29c2d4;--orange:#ff8d2b;--green:#43bd72;--purple:#aa61f5;--max:1160px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--text);background:linear-gradient(rgba(41,194,212,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(41,194,212,.045) 1px,transparent 1px),var(--bg);background-size:64px 64px;font-family:"Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;line-height:1.75}a{color:#75e7f2}a:hover{color:#fff}
+    .hero{border-top:5px solid var(--purple);border-bottom:1px solid var(--line);background:rgba(9,12,24,.92)}.hero-inner,.content{width:min(var(--max),calc(100% - 36px));margin:0 auto}.hero-inner{padding:64px 0 46px}.eyebrow{margin:0 0 8px;color:var(--purple);font-weight:800;letter-spacing:.14em}h1{margin:0;font-size:clamp(2.25rem,7vw,5.1rem);line-height:1;letter-spacing:.08em}h2{margin-top:0;font-size:clamp(1.55rem,4vw,2.2rem)}h3{color:#ccecf0;margin-top:2rem}.lead{max-width:790px;color:#c3d3df;font-size:1.08rem}.pills,.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pills{margin-top:24px}.pill,.node{border:1px solid var(--line);border-radius:999px;padding:4px 11px;color:var(--muted);font-size:.86rem}.node{border-radius:8px;background:#0a1322;color:var(--text);padding:8px 10px}.arrow{color:var(--cyan);font-weight:800}
+    nav{position:sticky;top:0;z-index:3;border-bottom:1px solid var(--line);background:rgba(7,11,20,.94);backdrop-filter:blur(10px)}nav div{width:min(var(--max),calc(100% - 36px));margin:0 auto;padding:11px 0;display:flex;gap:15px;overflow:auto;white-space:nowrap;font-size:.9rem}main{padding:30px 0 64px}section{margin:22px 0;padding:30px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(18,29,49,.98),rgba(9,15,27,.96));border-radius:16px}.cyan{border-left:4px solid var(--cyan)}.purple{border-left:4px solid var(--purple)}.green{border-left:4px solid var(--green)}.orange{border-left:4px solid var(--orange)}
+    code,.mono{font-family:"Cascadia Code",Consolas,monospace}code{padding:.12rem .35rem;border:1px solid var(--line);border-radius:.28rem;background:#08101d;color:#d6faff;font-size:.92em}pre{margin:16px 0;padding:18px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#080e1a;color:#d8f1f7;line-height:1.55}.note{padding:14px 16px;border-left:3px solid var(--orange);background:rgba(255,141,43,.08);color:#f6d7b6}.good{border-left-color:var(--green);background:rgba(67,189,114,.08);color:#c8efd7}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:680px}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:#8eeaf3;background:#101c2e}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:11px;padding:16px;background:#0b1423}.card h3{margin:.1rem 0 .55rem;color:var(--cyan);font-size:1.02rem}ul,ol{padding-left:1.35rem}footer{padding:0 0 42px;color:var(--muted);font-size:.9rem}@media(max-width:720px){.hero-inner{padding:45px 0 34px}section{padding:20px;border-radius:12px}.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header class="hero"><div class="hero-inner">
+  <p class="eyebrow">ALTERACT // IMPLEMENTATION REFERENCE</p>
+  <h1>技術仕様書</h1>
+  <p class="lead">Unityクライアント、ゲーム進行ロジック、ダメージ予測、通信対戦サーバー、途中復帰の実装構造を説明する開発者向け文書です。ゲームルールと画面要件は<a href="specification.html">ソフトウェア仕様書</a>を参照してください。</p>
+  <div class="pills"><span class="pill">文書版 1.0</span><span class="pill">最終更新 2026-07-26</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
+</div></header>
+<nav><div><a href="#overview">全体像</a><a href="#client">Unity構成</a><a href="#state">状態モデル</a><a href="#turn">手番・配置</a><a href="#damage">ダメージ解決</a><a href="#online">通信・復帰</a><a href="#server">サーバー</a><a href="#rules">変更時の注意</a></div></nav>
+<main class="content">
+<section id="overview" class="cyan">
+<h2>1. 全体像</h2>
+<p>ゲーム本体は単一のUnityシーンで生成するUI型プロトタイプです。<code>AlterActPrototype</code>がローカルゲームの唯一の状態所有者となり、画面表示はその状態から再構築します。通信対戦では同じ状態をJSONスナップショット化し、Nodeサーバーが部屋単位でバージョン管理します。</p>
+<pre>Unity Client (WebGL / Windows / Android)
+  ├─ CardCatalog             カード・キャラクターの静的データ
+  ├─ AlterActPrototype        局面状態、入力、UI生成、NPC、シミュレーション
+  │    ├─ .Navigation         タイトル、編成、設定
+  │    └─ .Online             HTTP通信、保存、復帰、視点の反転
+  └─ PlayerPrefs              音量 / 部屋コード / 参加者トークン
+                 │ HTTPS + JSON
+                 ▼
+Render: alteract-match (Express)
+  ├─ app.mjs                  API、手番・バージョン検証
+  └─ room-store.mjs           部屋保存抽象
+                 │ TLS Redis
+                 ▼
+Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時間</pre>
+<div class="note good">通信サーバーは「正しいクライアント同士の同期と途中復帰」を担当します。カード効果の完全な不正入力検証は、現在はUnityクライアント側が担うプロトタイプ設計です。</div>
+</section>
+
+<section id="client" class="purple">
+<h2>2. Unityクライアントの責務</h2>
+<div class="table-wrap"><table><thead><tr><th>ファイル</th><th>主な型・関数</th><th>責務</th></tr></thead><tbody>
+<tr><td class="mono">CardCatalog.cs</td><td><code>CardData</code> / <code>CharacterData</code> / <code>BuildDeck</code></td><td>カードの基本値・効果文・キャラクター情報・3人編成からの山札生成。</td></tr>
+<tr><td class="mono">AlterActPrototype.cs</td><td><code>CommitPlacement</code> / <code>Simulate</code> / <code>ResolveTime</code></td><td>局面状態、配置・Cost・対象指定、NPC、ダメージ予測、盤面UI。</td></tr>
+<tr><td class="mono">AlterActPrototype.Navigation.cs</td><td><code>ShowTitleScreen</code> / <code>ShowDeckSelection</code></td><td>タイトル→対戦方式→編成→対局の画面遷移、設定値の保存。</td></tr>
+<tr><td class="mono">AlterActPrototype.Online.cs</td><td><code>TryPublishOnlineState</code> / <code>RestoreOnlineGameState</code></td><td>部屋作成・参加・ポーリング・状態の送受信・PLAYER B視点の変換。</td></tr>
+<tr><td class="mono">AlterActUiEffects.cs</td><td><code>CardHoverEffect</code> / <code>UiPulseEffect</code></td><td>手札ホバー、選択・配置・ダメージ演出の補助。</td></tr>
+</tbody></table></div>
+<h3>起動と画面遷移</h3>
+<div class="flow"><span class="node">RuntimeInitializeOnLoadMethod</span><span class="arrow">→</span><span class="node">StartPrototype / Awake</span><span class="arrow">→</span><span class="node">ShowTitleScreen</span><span class="arrow">→</span><span class="node">EnterDeckSelection</span><span class="arrow">→</span><span class="node">StartBattle または通信ロビー</span></div>
+<p>UIはUnity Editor上の固定レイアウトに依存せず、<code>CreateCanvas</code>、<code>Panel</code>、<code>Label</code>、<code>Button</code>で実行時に生成します。<code>Update</code>で画面の縦横比を監視し、変化時は<code>RebuildForOrientationChange</code>で現在の画面を組み直します。</p>
+</section>
+
+<section id="state" class="green">
+<h2>3. 局面状態モデル</h2>
+<p>盤面キーはすべて <code>(player, character, time)</code> です。<code>player</code>は0/1、<code>character</code>は前衛・中衛・後衛の0〜2、<code>time</code>は時刻1〜4に対応する0〜3です。</p>
+<div class="table-wrap"><table><thead><tr><th>フィールド</th><th>型</th><th>意味</th></tr></thead><tbody>
+<tr><td><code>_hands / _decks</code></td><td>プレイヤーごとの<code>List&lt;CardData&gt;</code></td><td>手札と山札。支払いカードは選択してから山札に戻し、再シャッフルする。</td></tr>
+<tr><td><code>_placed</code></td><td>盤面キー → <code>CardData</code></td><td>その時点に見えている最上層カード。裏向きなら<code>FaceDown</code>を持つ。</td></tr>
+<tr><td><code>_stacks</code></td><td>盤面キー → <code>List&lt;StackLayer&gt;</code></td><td>実データの積層。カード、裏向き、Costかどうかを保持し、マクス等の下置きを表現する。</td></tr>
+<tr><td><code>_targets</code></td><td>攻撃元キー → 対象キー</td><td>攻撃・対象指定効果の対象。同一時刻の相手キャラだけを選択させる。</td></tr>
+<tr><td><code>_stars / _specialAmmo</code></td><td>盤面キー → 値</td><td>ステラのスター枚数、ヘイゼの特殊弾。AlterAct時は取り付け済み特殊弾を未使用へ戻す。</td></tr>
+<tr><td><code>_hp / _bonusHp</code></td><td>2×3の整数配列</td><td>開始HPと、デモン・チャージ等で得た恒久補正。</td></tr>
+<tr><td><code>_random</code></td><td><code>GameRandom</code></td><td>xorshift系の決定的乱数。内部<code>State</code>も通信スナップショットに含める。</td></tr>
+</tbody></table></div>
+<h3>Undoの境界</h3>
+<p><code>TurnActionSnapshot</code>は手札・山札・盤面・積層・対象・トークン・HP・ログ・手番進行を深く複製します。<code>CommitPlacement</code>の直前に<code>SaveUndoSnapshot</code>を呼び、同一手番内の確定操作だけを<code>UndoLastTurnAction</code>で戻します。通信中は確定後に送信されるため、復帰対象は「途中の選択」ではなく「最後に確定した局面」です。</p>
+</section>
+
+<section id="turn" class="orange">
+<h2>4. 手番・配置・Costの論理</h2>
+<div class="flow"><span class="node">カード選択</span><span class="arrow">→</span><span class="node">配置マス選択</span><span class="arrow">→</span><span class="node">通常Cost選択</span><span class="arrow">→</span><span class="node">AlterCost選択（必要時）</span><span class="arrow">→</span><span class="node">対象 / トークン選択</span><span class="arrow">→</span><span class="node">確定・同期</span></div>
+<p><code>PaymentStage</code>は <code>None</code>、<code>NormalCost</code>、<code>AlterActCost</code> の3段階です。通常CostとAlterAct Costは別々に選択され、支払いカードをランダムに決めません。</p>
+<h3><code>CommitPlacement</code>の処理順</h3>
+<ol>
+<li>Undo用スナップショットを保存する。</li>
+<li><code>PayAndRemovePlayedCard</code>でプレイカードと選択済みCostを手札から外す。通常Costは山札へ戻して再シャッフルする。マクスの選択時だけ、そのCostを同じマスのスタック下へ裏向きで保存できる。</li>
+<li>AlterActなら<code>ReturnMountedTokensForAlterAct</code>でヘイゼの特殊弾を未使用状態へ戻す。</li>
+<li>Cost層、プレイカード層の順に<code>_stacks</code>へ積み、見えるカードを<code>_placed</code>へ保存する。</li>
+<li><code>ResolvePlacementEffects</code>で配置時効果を処理する。デモン・チャージのHP増加、スター配置予約、メモリ・リセットの下置きなどがここにある。</li>
+<li>攻撃カードなら対象指定、必要ならトークン選択を開始する。終了後に盤面・手札・予測・操作ログを更新し、通信中は状態をpublishする。</li>
+</ol>
+<div class="note">裏向きカードは原則「効果なし」です。ただしアイネ編成では<code>GetEffectiveStats</code>が裏向きカードにBarrier 2を与えます。配置時に実行済みの効果は、裏向き化しても遡って取り消しません。</div>
+</section>
+
+<section id="damage" class="cyan">
+<h2>5. ダメージ予測・解決アルゴリズム</h2>
+<p><code>Simulate</code>は現在の盤面から時刻1〜4を順番に解決する予測処理です。実際の手札や盤面を破壊せず、<code>Simulation</code>へ時刻ごとの攻撃ログ、被ダメージ、残HPを作ります。</p>
+<pre>for time = 0..3:
+  alive と HP を前時刻の結果から引き継ぐ
+  ResolveTime(time) を実行
+  燕返しでこの時刻の被ダメージが発生したなら最大4回まで再解決
+  直接ダメージ + max(0, 通常ダメージ - Barrier) をHPへ反映
+  HP 0以下のキャラクターをLOSTにする</pre>
+<h3><code>ResolveTime</code>の順序</h3>
+<ol><li>その時刻で行動できるカードから有効ステータスを算出し、Barrierを対象キャラクター単位で合計する。</li><li>混沌の領域・飛躍する果実など、個別の即時ダメージを通常ダメージへ加算する。</li><li>攻撃カードは対象の有無、対象の生存、Range、見切りブロックを順に検証する。通れば通常または軽減不能ダメージへ加える。</li><li>シュロの「すいっちおん！」が過去の時刻から持ち越す遅延ダメージを加える。</li><li><code>direct + max(0, normal - barrier)</code> を計算し、浮遊中で合計6以上なら0に置換する。</li></ol>
+<h3>Range距離</h3>
+<p><code>Coordinate</code>はプレイヤーAを前→後で2,1,0、プレイヤーBを前→後で3,4,5へ並べます。<code>Distance</code>はこの両端の間にいる<strong>生存キャラクター数</strong>を数えるため、LOSTが発生すると同じ前後配置でも射程距離が変わります。これが「Rangeは縦方向に影響する」実装です。</p>
+<div class="grid"><div class="card"><h3>有効ステータス</h3><p><code>GetEffectiveStats</code>が基礎Attack / Barrier / Rangeへ、スター、特殊弾、バタフライ、浮遊連携、下の裏向きカード数、対象指定妨害などを合成します。</p></div><div class="card"><h3>盤面表示</h3><p><code>RefreshBoardStateDisplays</code>が予測結果を使い、LOST、効果なし、浮遊、バタフライ、スタック情報を時刻マスへ表示します。矢印は<code>RefreshTargetArrows</code>が対象指定から別レイヤーに描画します。</p></div></div>
+</section>
+
+<section id="online" class="purple">
+<h2>6. 通信対戦と途中復帰</h2>
+<div class="flow"><span class="node">POST /rooms<br>部屋作成</span><span class="arrow">→</span><span class="node">POST /join<br>2人目参加</span><span class="arrow">→</span><span class="node">ホストが初期局面を保存</span><span class="arrow">→</span><span class="node">約1.25秒ごとにGET</span><span class="arrow">→</span><span class="node">確定操作だけPUT</span></div>
+<p><code>OnlineGameState</code>は手札・山札をカードID配列で、盤面・スタック・対象・トークンをキー値配列で保存します。乱数状態、HP、ログ、時刻演出済みフラグも含むため、再読込後に同じ山札順と盤面へ戻れます。</p>
+<h3>PLAYER B視点の反転</h3>
+<p>クライアント内部では常に「自分」をローカルplayer 0、「相手」をローカルplayer 1としてUIを描きます。通信データは部屋の正規順序で保存するため、<code>CanonicalPlayer</code>と<code>LocalPlayer</code>がPLAYER Bでは0/1を反転します。これにより参加側も自分のチームが常に画面下に表示されます。</p>
+<h3>競合防止</h3>
+<p>保存要求には<code>expectedVersion</code>を含めます。サーバーの最新<code>version</code>と一致しなければ409 <code>VERSION_CONFLICT</code>を返し、クライアントはサーバー状態を復元します。また、初期化以外の保存は現在の手番プレイヤーだけが実行できます。</p>
+<div class="note">部屋コードと参加者トークンを端末の<code>PlayerPrefs</code>へ保存します。IPアドレスは復帰の識別子に使いません。トークンを失った端末からは、同じ部屋でも復帰できません。</div>
+</section>
+
+<section id="server" class="green">
+<h2>7. Nodeサーバーと永続化</h2>
+<div class="table-wrap"><table><thead><tr><th>場所</th><th>関数 / 型</th><th>論理</th></tr></thead><tbody>
+<tr><td><code>server/src/app.mjs</code></td><td><code>createApp(store)</code></td><td>Express、CORS、JSON上限2MB、HTTP API、エラー応答を構築する。</td></tr>
+<tr><td><code>app.mjs</code></td><td><code>randomCode</code> / <code>randomToken</code></td><td>紛らわしい文字を除いた6文字コードと、暗号学的乱数の参加トークンを発行する。</td></tr>
+<tr><td><code>app.mjs</code></td><td><code>roomView</code></td><td>トークンを含めずに返す共通の部屋応答を生成する。作成・参加の直後だけ個別トークンを付与する。</td></tr>
+<tr><td><code>server/src/room-store.mjs</code></td><td><code>RoomStore</code></td><td><code>REDIS_URL</code>があればRedis、なければローカルJSONファイルを使う保存抽象。</td></tr>
+<tr><td><code>RoomStore.set</code></td><td><code>redis.set(... EX: 86400)</code></td><td><code>alteract:room:&lt;code&gt;</code>へ保存し、24時間のTTLを毎回更新する。</td></tr>
+</tbody></table></div>
+<h3>API契約</h3>
+<div class="table-wrap"><table><thead><tr><th>HTTP</th><th>入力</th><th>サーバー処理</th><th>主な失敗</th></tr></thead><tbody>
+<tr><td><code>POST /api/rooms</code></td><td>3人の<code>deck</code>、先攻モード</td><td>待機部屋・PLAYER 1トークン・乱数seedを作成。</td><td><code>INVALID_DECK</code></td></tr>
+<tr><td><code>POST /api/rooms/:code/join</code></td><td>3人の<code>deck</code></td><td>PLAYER 2を追加し、先攻と手番を確定。</td><td><code>ROOM_NOT_FOUND</code> / <code>ROOM_FULL</code></td></tr>
+<tr><td><code>GET /api/rooms/:code</code></td><td>参加トークン</td><td>認証、TTL更新、部屋の状態返却。</td><td><code>INVALID_TOKEN</code> / <code>ROOM_EXPIRED</code></td></tr>
+<tr><td><code>PUT /api/rooms/:code/state</code></td><td>token / expectedVersion / state</td><td>バージョン・手番・サイズを検証して確定状態を保存。</td><td><code>VERSION_CONFLICT</code> / <code>NOT_YOUR_TURN</code></td></tr>
+<tr><td><code>GET /health</code></td><td>なし</td><td>稼働状況と<code>storage: redis|file|memory</code>を返す。</td><td>—</td></tr>
+</tbody></table></div>
+<p>本番はRenderの秘密環境変数<code>REDIS_URL</code>から、東京リージョンのUpstash RedisへTLS接続します。Render再起動および自動再デプロイの後も、保存した部屋・状態・バージョンを取得できることを実測済みです。</p>
+</section>
+
+<section id="rules" class="orange">
+<h2>8. 実装上の不変条件と変更時の注意</h2>
+<ul>
+<li>通信スナップショットで使うカードIDは<code>CardCatalog.Cards</code>の配列インデックスです。カード一覧の並び順を変える場合は、保存済み対戦との互換性を検討します。</li>
+<li><code>_placed</code>だけを上書きしてはなりません。Costや下置きカードを含む実データは<code>_stacks</code>にも積みます。マクスの裏向き枚数参照に必要です。</li>
+<li>新しい確定操作を追加する場合は、<code>TurnActionSnapshot</code>、<code>CaptureOnlineGameState</code>、<code>RestoreOnlineGameState</code>の3箇所へ状態を追加します。</li>
+<li>新しいカード効果を追加する場合は、配置時なら<code>ResolvePlacementEffects</code>、時刻解決なら<code>ResolveTime</code>または<code>GetEffectiveStats</code>、盤面表示なら<code>BoardStateSuffix</code>等を更新します。</li>
+<li>通信APIの状態スキーマを破壊的に変える場合は<code>OnlineGameState.schema</code>を上げ、旧スキーマの扱いを決めます。</li>
+<li>Upstash無料DBは長期間アクセスがない場合に休止・アーカイブされる可能性があります。部屋自体は最終アクセスから24時間で意図的に失効します。</li>
+</ul>
+<h3>確認手順</h3>
+<ol><li>サーバー: <code>node --test</code>でAPI・競合・ヘルスのテストを実行する。</li><li>Unity: PlayModeスモークでタイトル、編成、配置、Cost、AlterAct、トークン、Undo、結果を確認する。</li><li>通信: 2ブラウザで作成→参加→確定→再読込→復帰を確認する。</li><li>本番: <a href="https://alteract-match.onrender.com/health">/health</a>の<code>storage</code>が<code>redis</code>であることを確認する。</li></ol>
+</section>
+</main>
+<footer class="content">AlterAct Technical Specification ・ 実装更新時はこの文書、<a href="specification.html">ソフトウェア仕様書</a>、デバッグ評価チェックリストを同期更新する。</footer>
+</body>
+</html>
+
+
