@@ -18,13 +18,13 @@
   <p class="eyebrow">ALTERACT // IMPLEMENTATION REFERENCE</p>
   <h1>技術仕様書</h1>
   <p class="lead">Unityクライアント、ゲーム進行ロジック、ダメージ予測、通信対戦サーバー、途中復帰の実装構造を説明する開発者向け文書です。ゲームルールと画面要件は<a href="specification.html">ソフトウェア仕様書</a>を参照してください。</p>
-  <div class="pills"><span class="pill">文書版 1.0</span><span class="pill">最終更新 2026-07-26</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
+  <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.1</span><span class="pill">最終更新 2026-07-26</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
 </div></header>
 <nav><div><a href="#overview">全体像</a><a href="#client">Unity構成</a><a href="#state">状態モデル</a><a href="#turn">手番・配置</a><a href="#damage">ダメージ解決</a><a href="#online">通信・復帰</a><a href="#server">サーバー</a><a href="#rules">変更時の注意</a></div></nav>
 <main class="content">
 <section id="overview" class="cyan">
 <h2>1. 全体像</h2>
-<p>ゲーム本体は単一のUnityシーンで生成するUI型プロトタイプです。<code>AlterActPrototype</code>がローカルゲームの唯一の状態所有者となり、画面表示はその状態から再構築します。通信対戦では同じ状態をJSONスナップショット化し、Nodeサーバーが部屋単位でバージョン管理します。</p>
+<p>ゲーム本体は単一のUnityシーンからコード生成UIを構築するPublic Betaです。<code>AlterActPrototype</code>がローカルゲームの唯一の状態所有者となり、画面表示はその状態から再構築します。通信対戦では同じ状態をJSONスナップショット化し、Nodeサーバーが部屋単位でバージョン管理します。</p>
 <pre>Unity Client (WebGL / Windows / Android)
   ├─ CardCatalog             カード・キャラクターの静的データ
   ├─ AlterActPrototype        局面状態、入力、UI生成、NPC、シミュレーション
@@ -39,7 +39,7 @@ Render: alteract-match (Express)
                  │ TLS Redis
                  ▼
 Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時間</pre>
-<div class="note good">通信サーバーは「正しいクライアント同士の同期と途中復帰」を担当します。カード効果の完全な不正入力検証は、現在はUnityクライアント側が担うプロトタイプ設計です。</div>
+<div class="note good">通信サーバーは「正しいクライアント同士の同期と途中復帰」を担当します。カード効果の完全な不正入力検証は、Public Beta 0.9.0ではUnityクライアント側が担う既知の制約です。</div>
 </section>
 
 <section id="client" class="purple">
@@ -78,7 +78,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <p><code>PaymentStage</code>は <code>None</code>、<code>NormalCost</code>、<code>AlterActCost</code> の3段階です。通常CostとAlterAct Costは別々に選択され、支払いカードをランダムに決めません。</p>
 <p><code>SlotClicked</code>は、手札カード選択中に自分の配置済み時点をクリックした場合だけ<code>PlaceCard</code>へ渡してAlterActを開始します。カード未選択時の配置済み時点クリックは<code>ShowBoardCardDetail</code>へ渡し、参照操作として扱います。</p>
 <h3>7ターンの手番順</h3>
-<p><code>RequiredAdvances</code>は先攻を1・2・2・2・2・2・1回、後攻を2・2・2・2・2・2・0回とし、双方の合計を12回にします。<code>EndTurn</code>は固定のPLAYER番号ではなく<code>_firstPlayer</code>から後攻を算出し、同じラウンドを先攻→後攻の順に処理します。後攻の7ターン目終了時は<code>AllTimelinesFilled</code>で全24時点を検査し、未配置があれば<code>FinalizeBattle</code>を呼びません。</p>
+<p><code>ScheduledAdvances</code>は先攻を1・2・2・2・2・2・1回、後攻を2・2・2・2・2・2・0回とし、双方の合計を12回にします。<code>EndTurn</code>は固定のPLAYER番号ではなく<code>_firstPlayer</code>から後攻を算出し、同じラウンドを先攻→後攻の順に処理します。<code>RequiredAdvances</code>は通常この予定値を返しますが、0.9.0以前のB先攻保存データだけは後攻Aの未配置数を返して不足分を補完します。後攻の7ターン目終了時は<code>AllTimelinesFilled</code>で全24時点を検査し、未配置があれば<code>FinalizeBattle</code>を呼びません。</p>
 <h3><code>CommitPlacement</code>の処理順</h3>
 <ol>
 <li>Undo用スナップショットを保存する。</li>

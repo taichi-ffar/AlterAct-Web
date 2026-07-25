@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="AlterAct Unityプロトタイプ ソフトウェア仕様書">
+  <meta name="description" content="AlterAct Public Beta ソフトウェア仕様書">
   <title>AlterAct Software Specification</title>
   <style>
     :root {
@@ -303,16 +303,16 @@
 <body>
   <header class="hero">
     <div class="hero-inner">
-      <p class="eyebrow">Software specification // playable prototype</p>
+      <p class="eyebrow">Software specification // public beta</p>
       <h1>ALTERACT</h1>
       <p class="lead">
-        公式ルールの検証と対戦UI評価を目的とする、Unity製カードゲームアプリのソフトウェア仕様書。
+        Public Beta 0.9.0として公開中の、Unity製カードゲームアプリのソフトウェア仕様書。
         本書は実装変更に合わせて継続更新する。実装構造と主要関数は<a href="technical-specification.html">技術仕様書</a>を参照。
       </p>
       <div class="meta">
         <span class="pill live">公開中</span>
-        <span class="pill prototype">プロトタイプ</span>
-        <span class="pill">文書版 1.1</span>
+        <span class="pill prototype">Public Beta 0.9.0</span>
+        <span class="pill">文書版 1.2</span>
         <span class="pill">最終更新 2026-07-26</span>
         <span class="pill">Unity 6000.5.4f1</span>
       </div>
@@ -521,6 +521,12 @@
       <section id="ui">
         <h2>9. UI・操作仕様</h2>
         <ul>
+          <li>タイトル・編成・対戦・設定へ`PUBLIC BETA 0.9.0`を表示する。</li>
+          <li>タイトルのモード選択は暗色面とモード別アクセント線を使い、全面発光を抑える。</li>
+          <li>編成は`MODE SELECT → TEAM SETUP → BATTLE`、対戦操作は`STEP 1 → STEP 2 → STEP 3`で現在位置を示す。</li>
+          <li>対戦上部はROUND、手番、残り配置、AlterAct状態を区切って表示する。</li>
+          <li>手札見出しはHAND・DECK枚数を表示し、選択・通常Cost・AlterCostの色凡例を分離する。</li>
+          <li>ボタンは通常・ホバー・押下・無効状態を視覚的に区別し、主要パネルは控えめなアクセント枠を持つ。</li>
           <li>プレイヤー側を画面下、相手側を画面上へ固定する。</li>
           <li>Attackは橙、Barrierは青、Commonは緑を基本色とする。</li>
           <li>配置カードを選ぶと、左側の詳細領域にカード名、Cost、キャラクター、種別、数値、効果を表示する。</li>
@@ -650,7 +656,7 @@
   </div>
 
   <footer>
-    ALTERACT SOFTWARE SPECIFICATION · taichi-ffar · maintained with the playable prototype
+    ALTERACT SOFTWARE SPECIFICATION · taichi-ffar · PUBLIC BETA 0.9.0
   </footer>
 </body>
 </html>
