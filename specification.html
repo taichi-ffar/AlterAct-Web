@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="AlterAct Unityプロトタイプ ソフトウェア仕様書">
+  <title>AlterAct Software Specification</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --surface: #0d1424;
+      --surface-2: #121d31;
+      --line: #24354c;
+      --text: #edf7ff;
+      --muted: #9db0c3;
+      --cyan: #29c2d4;
+      --orange: #ff8d2b;
+      --green: #43bd72;
+      --purple: #aa61f5;
+      --danger: #ff5c6d;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(41, 194, 212, .055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(41, 194, 212, .055) 1px, transparent 1px),
+        radial-gradient(circle at 50% -15%, #23123d 0, transparent 42%),
+        var(--bg);
+      background-size: 72px 72px, 72px 72px, auto, auto;
+      font-family: "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+      line-height: 1.75;
+    }
+
+    a { color: #75e7f2; }
+    a:hover { color: white; }
+    code {
+      padding: .14rem .38rem;
+      border: 1px solid var(--line);
+      border-radius: .3rem;
+      color: #d6faff;
+      background: #08101d;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: .92em;
+    }
+
+    .hero {
+      border-top: 5px solid var(--purple);
+      border-bottom: 1px solid var(--line);
+      background: rgba(10, 12, 24, .88);
+    }
+    .hero-inner {
+      width: min(var(--max), calc(100% - 40px));
+      margin: 0 auto;
+      padding: 70px 0 58px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--purple);
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(2.35rem, 7vw, 5.4rem);
+      line-height: 1;
+      letter-spacing: .11em;
+    }
+    .lead {
+      max-width: 760px;
+      margin: 22px 0 0;
+      color: #c5d6e4;
+      font-size: 1.08rem;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 3px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #0c1524;
+      font-size: .83rem;
+      font-weight: 700;
+    }
+    .pill.live { border-color: rgba(67, 189, 114, .55); color: #83e4a3; }
+    .pill.prototype { border-color: rgba(255, 141, 43, .55); color: #ffb16b; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 36px;
+      width: min(var(--max), calc(100% - 40px));
+      margin: 0 auto;
+      padding: 40px 0 90px;
+    }
+    nav {
+      position: sticky;
+      top: 20px;
+      align-self: start;
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(13, 20, 36, .94);
+    }
+    nav strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--cyan);
+      letter-spacing: .08em;
+    }
+    nav a {
+      display: block;
+      padding: 5px 0;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .91rem;
+    }
+    nav a:hover { color: white; }
+
+    main { min-width: 0; }
+    section {
+      margin-bottom: 32px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(13, 20, 36, .9);
+      box-shadow: 0 14px 50px rgba(0, 0, 0, .18);
+      scroll-margin-top: 20px;
+    }
+    section::before {
+      display: block;
+      width: 54px;
+      height: 3px;
+      margin: -28px 0 22px -28px;
+      background: var(--cyan);
+      content: "";
+    }
+    section.accent-orange::before { background: var(--orange); }
+    section.accent-purple::before { background: var(--purple); }
+    section.accent-green::before { background: var(--green); }
+    h2 {
+      margin: 0 0 18px;
+      font-size: 1.65rem;
+      letter-spacing: .03em;
+    }
+    h3 {
+      margin: 26px 0 8px;
+      color: #c8f8fc;
+      font-size: 1.08rem;
+    }
+    p { margin: 10px 0; }
+    ul, ol { padding-left: 1.35rem; }
+    li + li { margin-top: 5px; }
+    .note {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--orange);
+      background: rgba(255, 141, 43, .08);
+      color: #f3d7bd;
+    }
+    .ok {
+      border-left-color: var(--green);
+      background: rgba(67, 189, 114, .08);
+      color: #c8efd5;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .card {
+      min-height: 130px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--cyan);
+      background: var(--surface-2);
+    }
+    .card.orange { border-top-color: var(--orange); }
+    .card.purple { border-top-color: var(--purple); }
+    .card.green { border-top-color: var(--green); }
+    .card h3 { margin: 0 0 6px; color: white; }
+    .card p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin: 18px 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: flow;
+    }
+    .flow li {
+      position: relative;
+      min-height: 92px;
+      padding: 15px 12px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      text-align: center;
+      font-weight: 700;
+    }
+    .flow li::before {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--cyan);
+      font-size: .72rem;
+      letter-spacing: .08em;
+      counter-increment: flow;
+      content: "STEP " counter(flow, decimal-leading-zero);
+    }
+
+    .table-wrap {
+      margin-top: 14px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 680px;
+      background: #0b1321;
+      font-size: .92rem;
+    }
+    th, td {
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: #c9faff;
+      background: #132035;
+      font-size: .82rem;
+      letter-spacing: .04em;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .status-yes { color: #7be39e; font-weight: 800; }
+    .status-partial { color: #ffb16b; font-weight: 800; }
+    .mono { font-family: "Cascadia Code", Consolas, monospace; }
+
+    footer {
+      padding: 30px 20px 50px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      text-align: center;
+      font-size: .88rem;
+    }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      nav {
+        position: static;
+        max-height: none;
+        columns: 2;
+      }
+      nav strong { column-span: all; }
+      .cards { grid-template-columns: 1fr 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .flow li { min-height: 0; text-align: left; }
+    }
+
+    @media (max-width: 560px) {
+      .hero-inner, .layout { width: min(100% - 24px, var(--max)); }
+      .hero-inner { padding: 48px 0 38px; }
+      h1 { font-size: 2.25rem; letter-spacing: .07em; }
+      nav { columns: 1; }
+      section { padding: 22px 18px; }
+      section::before { margin: -22px 0 18px -18px; }
+      .cards { grid-template-columns: 1fr; }
+      .meta { gap: 7px; }
+      .pill { font-size: .77rem; }
+    }
+
+    @media print {
+      :root { --bg: white; --surface: white; --surface-2: #f4f7fa; --text: #111; --muted: #455; --line: #bbc5ce; }
+      body { background: white; color: #111; }
+      .hero, section, nav { background: white; box-shadow: none; }
+      nav { display: none; }
+      .layout { display: block; width: 100%; padding-top: 20px; }
+      section { break-inside: avoid; }
+      a { color: #064f63; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Software specification // playable prototype</p>
+      <h1>ALTERACT</h1>
+      <p class="lead">
+        公式ルールの検証と対戦UI評価を目的とする、Unity製カードゲームアプリのソフトウェア仕様書。
+        本書は実装変更に合わせて継続更新する。
+      </p>
+      <div class="meta">
+        <span class="pill live">公開中</span>
+        <span class="pill prototype">プロトタイプ</span>
+        <span class="pill">文書版 1.0</span>
+        <span class="pill">最終更新 2026-07-26</span>
+        <span class="pill">Unity 6000.5.4f1</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav aria-label="仕様書目次">
+      <strong>CONTENTS</strong>
+      <a href="#overview">1. 概要</a>
+      <a href="#scope">2. 対象範囲</a>
+      <a href="#platforms">3. 対応環境</a>
+      <a href="#flow">4. 画面遷移</a>
+      <a href="#modes">5. 対戦モード</a>
+      <a href="#game">6. ゲーム仕様</a>
+      <a href="#functions">7. 機能要件</a>
+      <a href="#characters">8. キャラクター</a>
+      <a href="#ui">9. UI・操作仕様</a>
+      <a href="#state">10. 状態・保存</a>
+      <a href="#online">11. 通信対戦</a>
+      <a href="#quality">12. 非機能要件</a>
+      <a href="#testing">13. テスト・配布</a>
+      <a href="#limitations">14. 既知の制約</a>
+      <a href="#maintenance">15. 文書運用</a>
+    </nav>
+
+    <main>
+      <section id="overview">
+        <h2>1. 概要</h2>
+        <p>
+          AlterActは、3人のキャラクターで24枚のデッキを構成し、各キャラクターに対応する
+          4時点のタイムラインへカードを配置して戦う対戦カードゲームである。
+          本アプリは公式ルールのデジタル実装検証、ダメージ予測の可視化、操作性評価を目的とする。
+        </p>
+        <div class="cards">
+          <article class="card">
+            <h3>クライアント</h3>
+            <p>Unity WebGL / Windows x64 / Android ARM64。画面とゲーム処理はC#で実装。</p>
+          </article>
+          <article class="card orange">
+            <h3>対戦サーバー</h3>
+            <p>Node.js + Express。部屋コード、参加権限、状態バージョン、途中復帰を管理。</p>
+          </article>
+          <article class="card purple">
+            <h3>公開基盤</h3>
+            <p>Webクライアントと通信APIをRenderで公開。GitHubリポジトリから自動デプロイ。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="scope" class="accent-orange">
+        <h2>2. 対象範囲</h2>
+        <h3>対象</h3>
+        <ul>
+          <li>タイトル、対戦モード選択、キャラクター編成、対戦、勝敗表示。</li>
+          <li>NPC、同一端末でのローカル2人対戦、部屋コード式通信対戦。</li>
+          <li>カード配置、Cost、AlterAct、対象指定、トークン、ダメージ予測、ログ。</li>
+          <li>スマートフォンの縦横切替、全画面表示、音量設定。</li>
+        </ul>
+        <h3>対象外または未完成</h3>
+        <ul>
+          <li>アカウント、レーティング、マッチメイク、観戦、チャット。</li>
+          <li>サーバー側での公式ルール完全検証と高度な不正対策。</li>
+          <li>製品版の演出、音源、課金、分析、運営管理機能。</li>
+        </ul>
+        <p class="note">
+          公式ルールと実装に差異が見つかった場合は公式ルールを優先し、
+          実装・チェックリスト・本仕様書を同じ変更単位で更新する。
+        </p>
+      </section>
+
+      <section id="platforms">
+        <h2>3. 対応環境</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>対象</th><th>要件</th><th>状態</th><th>備考</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Web</td><td>PC / AndroidのChrome系ブラウザ</td><td class="status-yes">対応</td><td>WebGL、縦横画面、全画面</td></tr>
+              <tr><td>Windows</td><td>Windows 10 / 11 x64</td><td class="status-yes">対応</td><td>実行ファイル一式で配布</td></tr>
+              <tr><td>Android</td><td>Android 8.0以上、ARM64</td><td class="status-partial">ビルド対応</td><td>実機の継続回帰が必要</td></tr>
+              <tr><td>Unity Editor</td><td>Unity 6000.5.4f1</td><td class="status-yes">対応</td><td>URP 2D、Input System</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="flow" class="accent-purple">
+        <h2>4. 画面遷移</h2>
+        <ol class="flow">
+          <li>タイトル<br>対戦方法を選択</li>
+          <li>キャラ編成<br>3人と順序を決定</li>
+          <li>対戦開始<br>先攻と初手を決定</li>
+          <li>対戦<br>7ターン進行</li>
+          <li>結果<br>再編成またはタイトル</li>
+        </ol>
+        <ul>
+          <li>起動直後は必ずタイトルを表示する。</li>
+          <li>タイトルでNPC・ローカル・通信のいずれかを選んだ後、編成へ進む。</li>
+          <li>設定ボタンは全画面の右上に表示し、編成中・対戦中もタイトルへ戻れる。</li>
+          <li>通信対戦を中断した場合は、保存済み参加トークンから途中復帰できる。</li>
+        </ul>
+      </section>
+
+      <section id="modes">
+        <h2>5. 対戦モード</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>モード</th><th>PLAYER A</th><th>PLAYER B</th><th>通信</th><th>復帰</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>NPC対戦</td><td>ユーザー</td><td>NPC</td><td>不要</td><td>なし</td></tr>
+              <tr><td>ローカル対戦</td><td>ユーザー</td><td>同一端末のユーザー</td><td>不要</td><td>なし</td></tr>
+              <tr><td>通信対戦</td><td>部屋作成者または参加者</td><td>遠隔ユーザー</td><td>必須</td><td>確定操作単位</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="game" class="accent-green">
+        <h2>6. ゲーム仕様</h2>
+        <h3>編成と初期化</h3>
+        <ul>
+          <li>各プレイヤーは異なるキャラクター3人を選択する。</li>
+          <li>選択順を前衛・中衛・後衛へ割り当てる。</li>
+          <li>初期編成は初心者おすすめの「前衛サキ・中衛ラプラ・後衛ヘイゼ」。</li>
+          <li>選択キャラクターのカード各8枚、合計24枚をシャッフルして山札とする。</li>
+          <li>両プレイヤーは初手を4枚引く。先攻はランダムまたは明示選択できる。</li>
+        </ul>
+
+        <h3>タイムライン</h3>
+        <ul>
+          <li>各キャラクターは時刻1～4の4時点を持つ。</li>
+          <li>カードはキャラクター単位で、未配置かつ最も早い時点へ配置する。</li>
+          <li>攻撃・対象指定効果はカードと同じ時刻の対象時点を参照する。</li>
+          <li>Rangeは前衛・中衛・後衛の縦方向の距離へ適用する。</li>
+        </ul>
+
+        <h3>ターン進行</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ターン</th><th>先攻の必須配置</th><th>後攻の必須配置</th></tr></thead>
+            <tbody>
+              <tr><td>1ターン目</td><td>1回</td><td>2回</td></tr>
+              <tr><td>2～6ターン目</td><td>2回</td><td>2回</td></tr>
+              <tr><td>7ターン目</td><td>1回</td><td>0回</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          必須配置後は任意でAlterActを1回実行でき、手番終了時に最大4枚引く。
+          後攻の7ターン目終了後、時刻順に効果処理と勝敗判定を行う。
+        </p>
+      </section>
+
+      <section id="functions">
+        <h2>7. 機能要件</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>機能</th><th>要件</th><th>状態</th></tr></thead>
+            <tbody>
+              <tr><td>FR-001</td><td>モード選択</td><td>起動時にNPC・ローカル・通信を選択する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-002</td><td>編成</td><td>9人から重複なしで3人を選び、順序を変更できる。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-003</td><td>カード配置</td><td>通常配置・裏向き配置・AlterActを処理する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-004</td><td>Cost</td><td>通常CostとAlterAct専用Costを個別に選択する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-005</td><td>対象指定</td><td>同じ時刻の合法対象を盤面から選ぶ。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-006</td><td>トークン</td><td>ヘイゼ特殊弾、ステラスター等の選択を行う。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-007</td><td>予測表示</td><td>対象矢印、ダメージ数値、LOST・効果なし見込みを表示する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-008</td><td>操作履歴</td><td>配置、Cost、対象、手番、ダメージ、勝敗を記録する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-009</td><td>巻き戻し</td><td>同一手番内の直前の確定操作を復元する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-010</td><td>途中復帰</td><td>通信対戦の最後に確定した状態へ再接続する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-011</td><td>設定</td><td>音量、全画面、タイトル復帰を共通メニューから操作する。</td><td class="status-yes">実装済</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="characters" class="accent-orange">
+        <h2>8. キャラクター</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>キャラクター</th><th>HP</th><th>推奨位置</th><th>固有仕様の概要</th></tr></thead>
+            <tbody>
+              <tr><td>ラプラ</td><td>6</td><td>前・中</td><td>最初の自分ターン開始時に1枚引く。</td></tr>
+              <tr><td>サキ</td><td>7</td><td>前</td><td>自身のカードのRangeが減少しない。</td></tr>
+              <tr><td>ヘイゼ</td><td>4</td><td>後</td><td>重力弾・電子弾・量子弾を「狙撃」へ乗せる。</td></tr>
+              <tr><td>アイネ</td><td>4</td><td>前・中</td><td>自身のタイムラインの裏向きカードはBarrier 2。</td></tr>
+              <tr><td>ステラ</td><td>5</td><td>中・後</td><td>スターを時点へ置き、味方のAttackを強化する。</td></tr>
+              <tr><td>マクス</td><td>6</td><td>中</td><td>Costカードをカードの下へ裏向きで置ける。</td></tr>
+              <tr><td>リンゴ</td><td>5</td><td>前・後</td><td>キーワード〈浮遊〉を使用する。</td></tr>
+              <tr><td>ロア</td><td>5</td><td>後</td><td>キーワード〈バタフライ〉で味方を強化する。</td></tr>
+              <tr><td>シュロ</td><td>4</td><td>前・中</td><td>ロスト後の時点でも自身のカードが発動する。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          シンは実装対象外。カードは9キャラクター×3種の全27種で、各キャラクター8枚。
+          正式な数値と効果全文は<code>CardCatalog.cs</code>を参照する。
+        </p>
+      </section>
+
+      <section id="ui">
+        <h2>9. UI・操作仕様</h2>
+        <ul>
+          <li>プレイヤー側を画面下、相手側を画面上へ固定する。</li>
+          <li>Attackは橙、Barrierは青、Commonは緑を基本色とする。</li>
+          <li>配置カードを選ぶと、左側の詳細領域にカード名、Cost、キャラクター、種別、数値、効果を表示する。</li>
+          <li>攻撃元と対象をノード型リンクで接続し、自分の攻撃は青、相手の攻撃は赤で表示する。</li>
+          <li>全6時点が埋まった時刻はダメージトレード演出を一度表示する。</li>
+          <li>画面の縦横変更を実行中に検出し、状態を維持したままUIを再構築する。</li>
+          <li>手札は横スクロールし、ドロー順・キャラクター・種別・Costで表示ソートできる。</li>
+        </ul>
+      </section>
+
+      <section id="state" class="accent-purple">
+        <h2>10. 状態・保存</h2>
+        <h3>主要ゲーム状態</h3>
+        <ul>
+          <li>選択チーム、手札、山札、HP、ボーナスHP。</li>
+          <li>配置カード、STACK層、Cost層、対象、スター、特殊弾。</li>
+          <li>先攻、手番、ターン、配置回数、現在時刻、AlterAct使用状況。</li>
+          <li>乱数状態、ダメージ演出済み状態、対戦ログ、ゲーム終了状態。</li>
+        </ul>
+        <h3>端末保存</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>キー</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">AlterAct.Online.Code</td><td>復帰対象の部屋コード</td></tr>
+              <tr><td class="mono">AlterAct.Online.Token</td><td>部屋の参加者トークン</td></tr>
+              <tr><td class="mono">AlterAct.Online.Server</td><td>通信APIの接続先</td></tr>
+              <tr><td class="mono">AlterAct.Settings.MasterVolume</td><td>全体音量</td></tr>
+              <tr><td class="mono">AlterAct.Settings.MusicVolume</td><td>BGM音量</td></tr>
+              <tr><td class="mono">AlterAct.Settings.EffectsVolume</td><td>効果音量</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="online">
+        <h2>11. 通信対戦</h2>
+        <h3>構成</h3>
+        <ul>
+          <li>クライアントはHTTPSでRender上の対戦APIへ接続する。</li>
+          <li>6文字の部屋コードとプレイヤー別トークンを使用する。</li>
+          <li>クライアントは約1.25秒間隔で部屋状態をポーリングする。</li>
+          <li>サーバーは手番所有者と期待バージョンを検証し、古い更新を拒否する。</li>
+          <li>部屋は最終アクセスから24時間で期限切れになる。</li>
+        </ul>
+        <h3>HTTP API</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Method</th><th>Path</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td>POST</td><td class="mono">/api/rooms</td><td>部屋を作成し、PLAYER 1トークンを発行する。</td></tr>
+              <tr><td>POST</td><td class="mono">/api/rooms/:code/join</td><td>部屋へ参加し、PLAYER 2トークンを発行する。</td></tr>
+              <tr><td>GET</td><td class="mono">/api/rooms/:code?token=...</td><td>状態の取得、待機、途中復帰。</td></tr>
+              <tr><td>PUT</td><td class="mono">/api/rooms/:code/state</td><td>確定済みゲーム状態をバージョン付きで保存する。</td></tr>
+              <tr><td>GET</td><td class="mono">/health</td><td>サーバーヘルスチェック。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          Cost・トークン・対象指定の途中状態は送信しない。切断時は直前の確定操作へ戻る。
+          現行サーバーは完全な公式ルール判定を行わず、改造クライアント対策は限定的である。
+        </p>
+      </section>
+
+      <section id="quality" class="accent-green">
+        <h2>12. 非機能要件</h2>
+        <ul>
+          <li><strong>可用性：</strong>通信API停止時もNPC・ローカル対戦には影響しない。</li>
+          <li><strong>復旧性：</strong>通信対戦は確定操作単位で途中復帰できる。</li>
+          <li><strong>操作性：</strong>主要操作はマウスとタッチの双方で完結する。</li>
+          <li><strong>表示：</strong>PC横画面とスマートフォン縦横画面へ動的対応する。</li>
+          <li><strong>文字：</strong>Noto Sans CJK JPを同梱し、日本語を高解像度で表示する。</li>
+          <li><strong>再現性：</strong>通信対戦では乱数状態をスナップショットへ含める。</li>
+          <li><strong>保守性：</strong>機能変更時にコード、テスト、チェックリスト、本仕様書を同期更新する。</li>
+        </ul>
+      </section>
+
+      <section id="testing">
+        <h2>13. テスト・配布</h2>
+        <h3>自動確認</h3>
+        <ul>
+          <li>Unity PlayModeスモーク：画面遷移、編成、配置、Cost、AlterAct、トークン、巻き戻し、結果。</li>
+          <li>Nodeテスト：部屋作成、参加、状態保存、復帰、手番外更新拒否、競合拒否。</li>
+          <li>WebGLビルド：Unityバッチモードで生成し、ブラウザ表示とコンソールエラーを確認。</li>
+        </ul>
+        <h3>配布先</h3>
+        <ul>
+          <li><a href="https://alteract-web.onrender.com/">Webクライアント</a></li>
+          <li><a href="https://alteract-match.onrender.com/health">通信APIヘルス</a></li>
+          <li><a href="https://github.com/taichi-ffar/AlterAct">開発リポジトリ</a></li>
+          <li><a href="https://github.com/taichi-ffar/AlterAct-Web">Web公開リポジトリ</a></li>
+        </ul>
+      </section>
+
+      <section id="limitations" class="accent-orange">
+        <h2>14. 既知の制約</h2>
+        <ul>
+          <li>対戦サーバーは公式ルールを完全検証しない。</li>
+          <li>通信スナップショットには非公開領域も含まれ、ペイロードレベルの秘匿は未完成。</li>
+          <li>無料Renderインスタンス再起動をまたぐ復帰には、永続Redis / Valkey接続が必要。</li>
+          <li>マクス「メモリ・リセット」の任意手札選択UIは未実装。</li>
+          <li>Costカードを戻す山札位置を指定する完全な山札操作UIは未実装。</li>
+          <li>BGM・効果音の設定値は保存するが、製品用音源は未追加。</li>
+          <li>実機2台による通信対戦の全7ターン通し回帰は継続確認項目。</li>
+        </ul>
+      </section>
+
+      <section id="maintenance" class="accent-purple">
+        <h2>15. 文書運用</h2>
+        <ol>
+          <li>機能、ルール、API、対応環境、既知の制約を変更した場合は本書を更新する。</li>
+          <li>完了済み・未実装の状態はデバッグ評価チェックリストと一致させる。</li>
+          <li>文書上部の最終更新日と、必要に応じて文書版を更新する。</li>
+          <li>WebGLビルド時に本ファイルを公開用<code>specification.html</code>へコピーする。</li>
+          <li>公開後、PC幅とスマートフォン幅でレイアウトを確認する。</li>
+        </ol>
+        <p class="ok note">
+          詳細な試験項目は
+          <a href="https://github.com/taichi-ffar/AlterAct/blob/main/DEBUG_EVALUATION_CHECKLIST.md">
+            DEBUG_EVALUATION_CHECKLIST.md
+          </a>
+          を参照する。
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    ALTERACT SOFTWARE SPECIFICATION · taichi-ffar · maintained with the playable prototype
+  </footer>
+</body>
+</html>
