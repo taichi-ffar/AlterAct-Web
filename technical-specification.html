@@ -76,6 +76,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <h2>4. 手番・配置・Costの論理</h2>
 <div class="flow"><span class="node">カード選択</span><span class="arrow">→</span><span class="node">配置マス選択</span><span class="arrow">→</span><span class="node">通常Cost選択</span><span class="arrow">→</span><span class="node">AlterCost選択（必要時）</span><span class="arrow">→</span><span class="node">対象 / トークン選択</span><span class="arrow">→</span><span class="node">確定・同期</span></div>
 <p><code>PaymentStage</code>は <code>None</code>、<code>NormalCost</code>、<code>AlterActCost</code> の3段階です。通常CostとAlterAct Costは別々に選択され、支払いカードをランダムに決めません。</p>
+<p><code>SlotClicked</code>は、手札カード選択中に自分の配置済み時点をクリックした場合だけ<code>PlaceCard</code>へ渡してAlterActを開始します。カード未選択時の配置済み時点クリックは<code>ShowBoardCardDetail</code>へ渡し、参照操作として扱います。</p>
 <h3><code>CommitPlacement</code>の処理順</h3>
 <ol>
 <li>Undo用スナップショットを保存する。</li>
@@ -152,5 +153,3 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <footer class="content">AlterAct Technical Specification ・ 実装更新時はこの文書、<a href="specification.html">ソフトウェア仕様書</a>、デバッグ評価チェックリストを同期更新する。</footer>
 </body>
 </html>
-
-
