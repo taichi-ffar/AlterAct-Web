@@ -77,6 +77,8 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <div class="flow"><span class="node">カード選択</span><span class="arrow">→</span><span class="node">配置マス選択</span><span class="arrow">→</span><span class="node">通常Cost選択</span><span class="arrow">→</span><span class="node">AlterCost選択（必要時）</span><span class="arrow">→</span><span class="node">対象 / トークン選択</span><span class="arrow">→</span><span class="node">確定・同期</span></div>
 <p><code>PaymentStage</code>は <code>None</code>、<code>NormalCost</code>、<code>AlterActCost</code> の3段階です。通常CostとAlterAct Costは別々に選択され、支払いカードをランダムに決めません。</p>
 <p><code>SlotClicked</code>は、手札カード選択中に自分の配置済み時点をクリックした場合だけ<code>PlaceCard</code>へ渡してAlterActを開始します。カード未選択時の配置済み時点クリックは<code>ShowBoardCardDetail</code>へ渡し、参照操作として扱います。</p>
+<h3>7ターンの手番順</h3>
+<p><code>RequiredAdvances</code>は先攻を1・2・2・2・2・2・1回、後攻を2・2・2・2・2・2・0回とし、双方の合計を12回にします。<code>EndTurn</code>は固定のPLAYER番号ではなく<code>_firstPlayer</code>から後攻を算出し、同じラウンドを先攻→後攻の順に処理します。後攻の7ターン目終了時は<code>AllTimelinesFilled</code>で全24時点を検査し、未配置があれば<code>FinalizeBattle</code>を呼びません。</p>
 <h3><code>CommitPlacement</code>の処理順</h3>
 <ol>
 <li>Undo用スナップショットを保存する。</li>
