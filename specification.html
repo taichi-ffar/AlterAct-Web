@@ -312,7 +312,7 @@
       <div class="meta">
         <span class="pill live">公開中</span>
         <span class="pill prototype">プロトタイプ</span>
-        <span class="pill">文書版 1.0</span>
+        <span class="pill">文書版 1.1</span>
         <span class="pill">最終更新 2026-07-26</span>
         <span class="pill">Unity 6000.5.4f1</span>
       </div>
@@ -562,6 +562,7 @@
           <li>6文字の部屋コードとプレイヤー別トークンを使用する。</li>
           <li>クライアントは約1.25秒間隔で部屋状態をポーリングする。</li>
           <li>サーバーは手番所有者と期待バージョンを検証し、古い更新を拒否する。</li>
+          <li>本番環境は東京リージョンのUpstash Redisへ確定済み状態を保存し、Renderサービス再起動後も復帰できる。</li>
           <li>部屋は最終アクセスから24時間で期限切れになる。</li>
         </ul>
         <h3>HTTP API</h3>
@@ -573,7 +574,7 @@
               <tr><td>POST</td><td class="mono">/api/rooms/:code/join</td><td>部屋へ参加し、PLAYER 2トークンを発行する。</td></tr>
               <tr><td>GET</td><td class="mono">/api/rooms/:code?token=...</td><td>状態の取得、待機、途中復帰。</td></tr>
               <tr><td>PUT</td><td class="mono">/api/rooms/:code/state</td><td>確定済みゲーム状態をバージョン付きで保存する。</td></tr>
-              <tr><td>GET</td><td class="mono">/health</td><td>サーバーヘルスチェック。</td></tr>
+              <tr><td>GET</td><td class="mono">/health</td><td>サーバーと使用中ストレージのヘルスチェック。</td></tr>
             </tbody>
           </table>
         </div>
@@ -618,7 +619,7 @@
         <ul>
           <li>対戦サーバーは公式ルールを完全検証しない。</li>
           <li>通信スナップショットには非公開領域も含まれ、ペイロードレベルの秘匿は未完成。</li>
-          <li>無料Renderインスタンス再起動をまたぐ復帰には、永続Redis / Valkey接続が必要。</li>
+          <li>Upstash無料データベースは長期間アクセスがない場合に休止・アーカイブされる可能性がある。</li>
           <li>マクス「メモリ・リセット」の任意手札選択UIは未実装。</li>
           <li>Costカードを戻す山札位置を指定する完全な山札操作UIは未実装。</li>
           <li>BGM・効果音の設定値は保存するが、製品用音源は未追加。</li>
