@@ -22,7 +22,7 @@
       <div id="unity-warning"></div>
       <button id="fullscreen-button" type="button" aria-label="全画面表示">⛶</button>
     </main>
-    <script src="Build/eebaa32c108d9ed19f5a138f4180b843.loader.js"></script>
+    <script src="Build/b49d3b0aeebe201c8c54f54d45c02908.loader.js"></script>
     <script>
       const canvas = document.querySelector("#unity-canvas");
       const loading = document.querySelector("#loading");
@@ -39,14 +39,17 @@
 
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/687042cf71dee6a32672177985602579.data.unityweb",
+        dataUrl: "Build/69f48d525afc2280bd2341dfaee28caa.data.unityweb",
         frameworkUrl: "Build/19e30bf74e80938fb756437d3b88e518.framework.js.unityweb",
-        codeUrl: "Build/7da2f43cd3e649a9f750ce9965520677.wasm.unityweb",
+        codeUrl: "Build/6feacce7f8d36ae41bdad5ccb4aa3173.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "taichi-ffar",
         productName: "AlterAct",
-        productVersion: "0.1.0",
-        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        productVersion: "0.9.0",
+        devicePixelRatio: Math.min(
+          window.devicePixelRatio || 1,
+          (navigator.maxTouchPoints || 0) > 0 ? 3 : 2
+        ),
         showBanner
       }, value => progress.style.width = `${Math.round(value * 100)}%`)
         .then(unityInstance => {

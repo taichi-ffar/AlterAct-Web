@@ -85,7 +85,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <li><code>PayAndRemovePlayedCard</code>でプレイカードと選択済みCostを手札から外す。通常Costは山札へ戻して再シャッフルする。マクスの選択時だけ、そのCostを同じマスのスタック下へ裏向きで保存できる。</li>
 <li>AlterActなら<code>ReturnMountedTokensForAlterAct</code>でヘイゼの特殊弾を未使用状態へ戻す。</li>
 <li>Cost層、プレイカード層の順に<code>_stacks</code>へ積み、見えるカードを<code>_placed</code>へ保存する。</li>
-<li><code>ResolvePlacementEffects</code>で配置時効果を処理する。デモン・チャージのHP増加、スター配置予約、メモリ・リセットの下置きなどがここにある。</li>
+<li><code>ResolvePlacementEffects</code>で即時配置効果を処理する。メモリ・リセットは<code>QueueTokenSelection</code>から任意使用を提示し、<code>BeginMemoryResetHandSelection</code>で手札領域選択、<code>PlaceHandCardUnderMemoryReset</code>で下置きとドローを確定する。NPCは<code>ResolveAutomaticMemoryReset</code>で同じ順序を自動処理する。</li>
 <li>攻撃カードなら対象指定、必要ならトークン選択を開始する。終了後に盤面・手札・予測・操作ログを更新し、通信中は状態をpublishする。</li>
 </ol>
 <div class="note">裏向きカードは原則「効果なし」です。ただしアイネ編成では<code>GetEffectiveStats</code>が裏向きカードにBarrier 2を与えます。配置時に実行済みの効果は、裏向き化しても遡って取り消しません。</div>
@@ -104,7 +104,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <ol><li>その時刻で行動できるカードから有効ステータスを算出し、Barrierを対象キャラクター単位で合計する。</li><li>混沌の領域・飛躍する果実など、個別の即時ダメージを通常ダメージへ加算する。</li><li>攻撃カードは対象の有無、対象の生存、Range、見切りブロックを順に検証する。通れば通常または軽減不能ダメージへ加える。</li><li>シュロの「すいっちおん！」が過去の時刻から持ち越す遅延ダメージを加える。</li><li><code>direct + max(0, normal - barrier)</code> を計算し、浮遊中で合計6以上なら0に置換する。</li></ol>
 <h3>Range距離</h3>
 <p><code>Coordinate</code>はプレイヤーAを前→後で2,1,0、プレイヤーBを前→後で3,4,5へ並べます。<code>Distance</code>はこの両端の間にいる<strong>生存キャラクター数</strong>を数えるため、LOSTが発生すると同じ前後配置でも射程距離が変わります。これが「Rangeは縦方向に影響する」実装です。</p>
-<div class="grid"><div class="card"><h3>有効ステータス</h3><p><code>GetEffectiveStats</code>が基礎Attack / Barrier / Rangeへ、スター、特殊弾、バタフライ、浮遊連携、下の裏向きカード数、対象指定妨害などを合成します。</p></div><div class="card"><h3>盤面表示</h3><p><code>RefreshBoardStateDisplays</code>が予測結果を使い、LOST、効果なし、浮遊、バタフライ、スタック情報を時刻マスへ表示します。<code>RefreshTargetArrows</code>は接続線を盤面レイヤー、合計ダメージ数字を入力透過の<code>Target Damage Labels</code>前景レイヤーへ分離して描画し、線や時刻マスの背面へ数字が隠れるのを防ぎます。</p></div></div>
+<div class="grid"><div class="card"><h3>有効ステータス</h3><p><code>GetEffectiveStats</code>が基礎Attack / Barrier / Rangeへ、スター、特殊弾、バタフライ、浮遊連携、下の裏向きカード数、対象指定妨害などを合成します。</p></div><div class="card"><h3>盤面表示</h3><p><code>RefreshBoardStateDisplays</code>が予測結果を使い、LOST、効果なし、浮遊、バタフライ、下の裏向き枚数を時刻マスへ表示します。独立した中央予測帯は作らず、<code>RefreshTargetArrows</code>が接続線を盤面レイヤー、合計ダメージ数字を入力透過の<code>Target Damage Labels</code>前景レイヤーへ分離して描画し、線や時刻マスの背面へ数字が隠れるのを防ぎます。</p></div></div>
 </section>
 
 <section id="online" class="purple">
