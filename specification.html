@@ -313,7 +313,7 @@
         <span class="pill live">公開中</span>
         <span class="pill prototype">Public Beta 0.9.0</span>
         <span class="pill">文書版 1.2</span>
-        <span class="pill">最終更新 2026-07-26</span>
+        <span class="pill">最終更新 2026-07-27</span>
         <span class="pill">Unity 6000.5.4f1</span>
       </div>
     </div>
@@ -484,7 +484,7 @@
               <tr><td>FR-004</td><td>Cost</td><td>通常CostとAlterAct専用Costを個別に選択する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-005</td><td>対象指定</td><td>同じ時刻の合法対象を盤面から選ぶ。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-006</td><td>トークン</td><td>ヘイゼ特殊弾、ステラスター等の選択を行う。</td><td class="status-yes">実装済</td></tr>
-              <tr><td>FR-007</td><td>予測表示</td><td>対象矢印、前景レイヤーの合計ダメージ数値、LOST・効果なし見込みを表示する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-007</td><td>予測表示</td><td>対象矢印と前景ダメージ数値を表示する。予測LOSTは確定した次の時刻から盤面へ`!`、詳細欄へ理由を表示し、終了時は`LOST`と暗赤色で示す。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-008</td><td>操作履歴</td><td>配置、Cost、対象、手番、ダメージ、勝敗を記録する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-009</td><td>巻き戻し</td><td>同一手番内の直前の確定操作を復元する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-010</td><td>途中復帰</td><td>通信対戦の最後に確定した状態へ再接続する。</td><td class="status-yes">実装済</td></tr>
@@ -533,9 +533,11 @@
           <li>攻撃元と対象をノード型リンクで接続し、自分の攻撃は青、相手の攻撃は赤で表示する。</li>
           <li>全6時点が埋まった時刻はダメージトレードを一度だけ操作ログへ記録する。操作を遮る行動判定ポップアップは表示しない。</li>
           <li>画面の縦横変更を実行中に検出し、状態を維持したままUIを再構築する。</li>
+          <li>縦横変更による再構築後は、配置カード、裏向き、対象選択、LOSTの色を局面状態から再適用する。</li>
           <li>敵味方6行を1枚のボード面として扱い、重複する中央予測帯は表示しない。見込みダメージは攻撃リンク上の前景数字へ集約する。</li>
           <li>狭い横画面では編成カード・手札・プレビューを圧縮し、スマートフォン縦画面では縦長比率の余剰高さを6行へ配分して時点マスを正方形へ近づける。</li>
           <li>縦画面は盤面、横スクロール手札、効果全文のカードプレビュー、確定操作の順に配置し、領域を重ねない。</li>
+          <li>背景グリッドと左端アクセント線はアンカー伸縮で画面全高を覆い、縦画面の端でも欠けない。</li>
           <li>手札は横スクロールし、ドロー順・キャラクター・種別・Costで表示ソートできる。</li>
         </ul>
       </section>
