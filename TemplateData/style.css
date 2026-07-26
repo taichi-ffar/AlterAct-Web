@@ -98,6 +98,6 @@ body,
 #unity-warning:empty { display: none; }
 #unity-warning[data-type="error"] { color: white; background: #b51f35; }
 
-@media (display-mode: fullscreen), (display-mode: standalone) {
+@media (display-mode: standalone) {
   #fullscreen-button { display: none; }
 }
