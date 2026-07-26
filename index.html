@@ -28,13 +28,15 @@
       const loading = document.querySelector("#loading");
       const progress = document.querySelector("#progress-fill");
       const fullscreenButton = document.querySelector("#fullscreen-button");
+      let fullscreenRequested = false;
+      let fullscreenTogglePending = false;
 
       function currentFullscreenElement() {
         return document.fullscreenElement || document.webkitFullscreenElement || null;
       }
 
       function updateFullscreenButton() {
-        const active = Boolean(currentFullscreenElement());
+        const active = Boolean(currentFullscreenElement()) || fullscreenRequested;
         fullscreenButton.textContent = active ? "↙" : "⛶";
         fullscreenButton.setAttribute("aria-label", active ? "全画面を解除" : "全画面表示");
         fullscreenButton.setAttribute("aria-pressed", active ? "true" : "false");
@@ -51,7 +53,7 @@
 
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/cd4e2d3ba7227187ae4ec4b296031c4d.data.unityweb",
+        dataUrl: "Build/5871003eeb46bed6e2a95aa35e0b299a.data.unityweb",
         frameworkUrl: "Build/19e30bf74e80938fb756437d3b88e518.framework.js.unityweb",
         codeUrl: "Build/2f616111a67f3dfc8b242302c160d56c.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
@@ -67,7 +69,9 @@
         .then(unityInstance => {
           loading.hidden = true;
           fullscreenButton.addEventListener("click", async () => {
-            const active = Boolean(currentFullscreenElement());
+            const active = Boolean(currentFullscreenElement()) || fullscreenRequested;
+            fullscreenTogglePending = true;
+            fullscreenRequested = !active;
             if (active) {
               try {
                 const exit = document.exitFullscreen || document.webkitExitFullscreen;
@@ -83,9 +87,15 @@
               try { unityInstance.SetFullscreen(1); } catch (_) {}
             }
             updateFullscreenButton();
+            setTimeout(() => fullscreenTogglePending = false, 250);
           });
-          document.addEventListener("fullscreenchange", updateFullscreenButton);
-          document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+          const handleFullscreenChange = () => {
+            if (currentFullscreenElement()) fullscreenRequested = true;
+            else if (!fullscreenTogglePending) fullscreenRequested = false;
+            updateFullscreenButton();
+          };
+          document.addEventListener("fullscreenchange", handleFullscreenChange);
+          document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
           updateFullscreenButton();
         })
         .catch(message => showBanner(message, "error"));
