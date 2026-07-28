@@ -307,12 +307,12 @@
       <h1>ALTERACT</h1>
       <p class="lead">
         Public Beta 0.9.0として公開中の、Unity製カードゲームアプリのソフトウェア仕様書。
-        本書は実装変更に合わせて継続更新する。実装構造と主要関数は<a href="technical-specification.html">技術仕様書</a>を参照。
+        本書は実装変更に合わせて継続更新する。実装構造と主要関数は<a href="AlterAct_Technical_Specification.html">技術仕様書</a>を参照。
       </p>
       <div class="meta">
         <span class="pill live">公開中</span>
         <span class="pill prototype">Public Beta 0.9.0</span>
-        <span class="pill">文書版 1.4</span>
+        <span class="pill">文書版 1.6</span>
         <span class="pill">最終更新 2026-07-28</span>
         <span class="pill">Unity 6000.5.4f1</span>
       </div>
@@ -367,7 +367,7 @@
         <h2>2. 対象範囲</h2>
         <h3>対象</h3>
         <ul>
-          <li>ホーム、キャラクター図鑑、対戦モード選択、キャラクター編成、対戦、勝敗表示。</li>
+          <li>ホーム、キャラクター図鑑、チュートリアル、対戦モード選択、キャラクター編成、対戦、勝敗表示。</li>
           <li>NPC、同一端末でのローカル2人対戦、部屋コード式通信対戦。</li>
           <li>カード配置、Cost、AlterAct、対象指定、トークン、ダメージ予測、ログ。</li>
           <li>スマートフォンの縦横切替、全画面表示、音量設定。</li>
@@ -414,6 +414,7 @@
           <li>起動直後は必ずホームを表示し、PLAY・DECK・CHARACTER ARCHIVE・SETTINGSを提示する。</li>
           <li>PLAYでNPC・ローカル・通信のいずれかを選んだ後、編成へ進む。</li>
           <li>DECKは対戦方式を確定せず編成画面を開き、CHARACTER ARCHIVEはキャラクター図鑑を開く。</li>
+          <li>TUTORIALは基礎4レッスンと、実装済み9キャラクターのトライアル選択を開く。</li>
           <li>設定ボタンは全画面の右上に表示し、編成中・対戦中もホームへ戻れる。</li>
           <li>通信対戦を中断した場合は、保存済み参加トークンから途中復帰できる。</li>
         </ul>
@@ -491,6 +492,7 @@
               <tr><td>FR-010</td><td>途中復帰</td><td>通信対戦の最後に確定した状態へ再接続する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-011</td><td>設定</td><td>音量、全画面、タイトル復帰を共通メニューから操作する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-012</td><td>キャラクター図鑑</td><td>9人からキャラクターを選び、人物紹介、戦闘プロフィール、キャラクター効果、専用カード3種類の能力・効果・公式フレーバーテキストを参照する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-013</td><td>チュートリアル</td><td>基礎4レッスンとキャラクター別9トライアルを提供し、固定教材盤面と段階的な案内で配置・攻撃・Cost・AlterAct・固有効果を学習できるようにする。初版は通常対戦と分離したガイドシミュレーションとする。</td><td class="status-yes">実装済</td></tr>
             </tbody>
           </table>
         </div>
@@ -532,6 +534,8 @@
           <li>プレイヤー側を画面下、相手側を画面上へ固定する。</li>
           <li>Attackは橙、Barrierは青、Commonは緑を基本色とする。</li>
           <li>ホームはPLAY・DECK・CHARACTER ARCHIVEを主要導線として明確に分離し、設定を右上へ配置する。</li>
+          <li>チュートリアルでは案内キャラクターを右側へ表示し、1台詞につき要求操作を1つに限定する。操作対象は盤面または手札上で直接発光し、説明だけのポップアップで盤面を遮らない。</li>
+          <li>誤操作時は画面遷移させず、現在の有効対象と短いヒントを再表示する。必須操作中は無関係な入力だけを制限し、カード詳細と設定は参照できる。</li>
           <li>キャラクター図鑑は9人の一覧、選択キャラクターのプロフィール、専用カード3種類のパネルで構成する。</li>
           <li>プロフィールには世界観資料とカードから確認できる人物紹介、所属、HP、推奨位置、主なRange、火力・生存・射程・速度・扱いやすさ、キャラクター効果を表示する。</li>
           <li>専用カードにはカード名、Cost、種別、枚数、Attack・Barrier・Range、効果、公式フレーバーテキストを表示し、Attackは橙、Barrierは青、Commonは緑で区別する。</li>
