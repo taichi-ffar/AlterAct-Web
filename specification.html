@@ -312,8 +312,8 @@
       <div class="meta">
         <span class="pill live">公開中</span>
         <span class="pill prototype">Public Beta 0.9.0</span>
-        <span class="pill">文書版 1.2</span>
-        <span class="pill">最終更新 2026-07-27</span>
+        <span class="pill">文書版 1.3</span>
+        <span class="pill">最終更新 2026-07-28</span>
         <span class="pill">Unity 6000.5.4f1</span>
       </div>
     </div>
@@ -367,7 +367,7 @@
         <h2>2. 対象範囲</h2>
         <h3>対象</h3>
         <ul>
-          <li>タイトル、対戦モード選択、キャラクター編成、対戦、勝敗表示。</li>
+          <li>ホーム、カードリスト、対戦モード選択、キャラクター編成、対戦、勝敗表示。</li>
           <li>NPC、同一端末でのローカル2人対戦、部屋コード式通信対戦。</li>
           <li>カード配置、Cost、AlterAct、対象指定、トークン、ダメージ予測、ログ。</li>
           <li>スマートフォンの縦横切替、全画面表示、音量設定。</li>
@@ -404,16 +404,17 @@
       <section id="flow" class="accent-purple">
         <h2>4. 画面遷移</h2>
         <ol class="flow">
-          <li>タイトル<br>対戦方法を選択</li>
-          <li>キャラ編成<br>3人と順序を決定</li>
+          <li>ホーム<br>主要機能を選択</li>
+          <li>PLAY / DECK<br>対戦方法・3人編成</li>
           <li>対戦開始<br>先攻と初手を決定</li>
           <li>対戦<br>7ターン進行</li>
-          <li>結果<br>再編成またはタイトル</li>
+          <li>結果<br>再編成またはホーム</li>
         </ol>
         <ul>
-          <li>起動直後は必ずタイトルを表示する。</li>
-          <li>タイトルでNPC・ローカル・通信のいずれかを選んだ後、編成へ進む。</li>
-          <li>設定ボタンは全画面の右上に表示し、編成中・対戦中もタイトルへ戻れる。</li>
+          <li>起動直後は必ずホームを表示し、PLAY・DECK・CARD LIBRARY・SETTINGSを提示する。</li>
+          <li>PLAYでNPC・ローカル・通信のいずれかを選んだ後、編成へ進む。</li>
+          <li>DECKは対戦方式を確定せず編成画面を開き、CARD LIBRARYは全カードの参照画面を開く。</li>
+          <li>設定ボタンは全画面の右上に表示し、編成中・対戦中もホームへ戻れる。</li>
           <li>通信対戦を中断した場合は、保存済み参加トークンから途中復帰できる。</li>
         </ul>
       </section>
@@ -478,7 +479,7 @@
           <table>
             <thead><tr><th>ID</th><th>機能</th><th>要件</th><th>状態</th></tr></thead>
             <tbody>
-              <tr><td>FR-001</td><td>モード選択</td><td>起動時にNPC・ローカル・通信を選択する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-001</td><td>ホーム</td><td>起動時にPLAY・DECK・CARD LIBRARY・SETTINGSを表示する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-002</td><td>編成</td><td>9人から重複なしで3人を選び、順序を変更できる。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-003</td><td>カード配置</td><td>通常配置・裏向き配置・AlterActを処理する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-004</td><td>Cost</td><td>通常CostとAlterAct専用Costを個別に選択する。</td><td class="status-yes">実装済</td></tr>
@@ -489,6 +490,7 @@
               <tr><td>FR-009</td><td>巻き戻し</td><td>同一手番内の直前の確定操作を復元する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-010</td><td>途中復帰</td><td>通信対戦の最後に確定した状態へ再接続する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-011</td><td>設定</td><td>音量、全画面、タイトル復帰を共通メニューから操作する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-012</td><td>カードリスト</td><td>全27種類をキャラクター別に絞り込み、能力、効果、キャラクター効果、公式フレーバーテキストを参照する。</td><td class="status-yes">実装済</td></tr>
             </tbody>
           </table>
         </div>
@@ -529,6 +531,9 @@
           <li>ボタンは通常・ホバー・押下・無効状態を視覚的に区別し、主要パネルは控えめなアクセント枠を持つ。</li>
           <li>プレイヤー側を画面下、相手側を画面上へ固定する。</li>
           <li>Attackは橙、Barrierは青、Commonは緑を基本色とする。</li>
+          <li>ホームはPLAY・DECK・CARD LIBRARYを主要導線として明確に分離し、設定を右上へ配置する。</li>
+          <li>カードリストはALLと9キャラクターのフィルター、スクロール可能なカードグリッド、選択カードの詳細欄で構成する。</li>
+          <li>カードリストの詳細欄には公式フレーバーテキストをカード効果と区別して表示する。</li>
           <li>配置カードを選ぶと、左側の詳細領域にカード名、Cost、キャラクター、種別、数値、効果を表示する。</li>
           <li>攻撃元と対象をノード型リンクで接続し、自分の攻撃は青、相手の攻撃は赤で表示する。</li>
           <li>全6時点が埋まった時刻はダメージトレードを一度だけ操作ログへ記録する。操作を遮る行動判定ポップアップは表示しない。</li>
