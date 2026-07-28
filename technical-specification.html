@@ -17,7 +17,7 @@
 <header class="hero"><div class="hero-inner">
   <p class="eyebrow">ALTERACT // IMPLEMENTATION REFERENCE</p>
   <h1>技術仕様書</h1>
-  <p class="lead">Unityクライアント、ゲーム進行ロジック、ダメージ予測、通信対戦サーバー、途中復帰の実装構造を説明する開発者向け文書です。ゲームルールと画面要件は<a href="AlterAct_Software_Specification.html">ソフトウェア仕様書</a>を参照してください。</p>
+  <p class="lead">Unityクライアント、ゲーム進行ロジック、ダメージ予測、通信対戦サーバー、途中復帰の実装構造を説明する開発者向け文書です。ゲームルールと画面要件は<a href="specification.html">ソフトウェア仕様書</a>を参照してください。</p>
   <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.5</span><span class="pill">最終更新 2026-07-28</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
 </div></header>
 <nav><div><a href="#overview">全体像</a><a href="#client">Unity構成</a><a href="#state">状態モデル</a><a href="#turn">手番・配置</a><a href="#damage">ダメージ解決</a><a href="#online">通信・復帰</a><a href="#server">サーバー</a><a href="#rules">変更時の注意</a></div></nav>
@@ -58,7 +58,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <h3>ホームとキャラクター図鑑</h3>
 <p><code>ShowTitleScreen</code>はホームの4導線を生成し、<code>ShowPlayModeMenu</code>だけが対戦方式選択をモーダル表示します。<code>ShowCardLibrary</code>は9人のキャラクター一覧、プロフィール、専用カード3種類の領域を構築します。<code>SelectLibraryCharacter</code>が選択中のキャラクター名を保持し、<code>RefreshCharacterLibrary</code>が<code>CardCatalog.Characters</code>の人物紹介・所属・HP・推奨位置・主なRange・5項目の評価・固有効果と、<code>CardCatalog.Cards</code>から該当する3種類の能力・効果文・<code>CardData.FlavorText</code>を再生成します。画面回転時は<code>AppScreen.CardLibrary</code>を判定して図鑑画面を再生成し、<code>_selectedLibraryCharacter</code>を維持します。</p>
 <h3>チュートリアル</h3>
-<p><code>AlterActPrototype.Tutorial.cs</code>が基礎4ステージとキャラクター別9ステージの固定教材盤面を構築します。<code>Resources/Tutorial/tutorial_dialogue.json</code>には13ステージと75 Cueを収録し、<code>stageId</code>、<code>sceneId</code>、<code>order</code>、表示トリガー、案内テキスト、要求操作、有効対象、ハイライト、成功文、誤操作ヒント、進行制限を保持します。<code>TutorialDatabase</code>、<code>TutorialStageRecord</code>、<code>TutorialCueRecord</code>へ<code>JsonUtility</code>で読み込みます。</p>
+<p><code>AlterActPrototype.Tutorial.cs</code>が基礎4ステージとキャラクター別9ステージの固定教材盤面を構築します。<code>Resources/Tutorial/tutorial_dialogue.json</code>には13ステージと75 Cueを収録し、<code>stageId</code>、<code>sceneId</code>、<code>order</code>、表示トリガー、案内テキスト、要求操作、有効対象、ハイライト、成功文、誤操作ヒント、進行制限を保持します。<code>TutorialDatabase</code>、<code>TutorialStageRecord</code>、<code>TutorialCueRecord</code>へ<code>JsonUtility</code>で読み込みます。<code>TutorialFocusRows</code>と<code>TutorialFocusTimes</code>が対象記述を操作可能な行・時刻へ変換し、非対象領域を減光します。過去Cueは<code>TutorialStateCaption</code>で確認済み・配置済み・対象指定済み・Cost確定・解決済みの盤面表示へ変換されるため、Cue進行後も操作結果を視覚的に追跡できます。</p>
 <p><code>ShowTutorialSelection</code>が解放状態とクリア状態を表示し、<code>ShowTutorialStage</code>が横画面・縦画面用の教材盤面とN.O.A.案内を生成します。<code>TutorialZone</code>はCueごとの操作を盤面・手札・ガイドへ割り振り、有効な操作だけをButtonとして生成します。<code>AdvanceTutorialCue</code>で成功文を表示して次へ進み、<code>CompleteTutorialStage</code>でステージ別の<code>PlayerPrefs</code>へ保存します。基礎は順次解放し、B04完了後に9つのキャラクタートライアルを解放します。初版は通常対戦の局面状態・Undo・通信スナップショットと分離したガイドシミュレーションです。</p>
 </section>
 
@@ -158,6 +158,6 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <ol><li>サーバー: <code>node --test</code>でAPI・競合・ヘルスのテストを実行する。</li><li>Unity: PlayModeスモークでタイトル、編成、配置、Cost、AlterAct、トークン、Undo、結果を確認する。</li><li>通信: 2ブラウザで作成→参加→確定→再読込→復帰を確認する。</li><li>本番: <a href="https://alteract-match.onrender.com/health">/health</a>の<code>storage</code>が<code>redis</code>であることを確認する。</li></ol>
 </section>
 </main>
-<footer class="content">AlterAct Technical Specification ・ 実装更新時はこの文書、<a href="AlterAct_Software_Specification.html">ソフトウェア仕様書</a>、デバッグ評価チェックリストを同期更新する。</footer>
+<footer class="content">AlterAct Technical Specification ・ 実装更新時はこの文書、<a href="specification.html">ソフトウェア仕様書</a>、デバッグ評価チェックリストを同期更新する。</footer>
 </body>
 </html>
