@@ -18,7 +18,7 @@
   <p class="eyebrow">ALTERACT // IMPLEMENTATION REFERENCE</p>
   <h1>技術仕様書</h1>
   <p class="lead">Unityクライアント、ゲーム進行ロジック、ダメージ予測、通信対戦サーバー、途中復帰の実装構造を説明する開発者向け文書です。ゲームルールと画面要件は<a href="specification.html">ソフトウェア仕様書</a>を参照してください。</p>
-  <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.2</span><span class="pill">最終更新 2026-07-28</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
+  <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.3</span><span class="pill">最終更新 2026-07-28</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
 </div></header>
 <nav><div><a href="#overview">全体像</a><a href="#client">Unity構成</a><a href="#state">状態モデル</a><a href="#turn">手番・配置</a><a href="#damage">ダメージ解決</a><a href="#online">通信・復帰</a><a href="#server">サーバー</a><a href="#rules">変更時の注意</a></div></nav>
 <main class="content">
@@ -28,7 +28,7 @@
 <pre>Unity Client (WebGL / Windows / Android)
   ├─ CardCatalog             カード・キャラクターの静的データ
   ├─ AlterActPrototype        局面状態、入力、UI生成、NPC、シミュレーション
-  │    ├─ .Navigation         ホーム、カードリスト、編成、設定
+  │    ├─ .Navigation         ホーム、キャラクター図鑑、編成、設定
   │    └─ .Online             HTTP通信、保存、復帰、視点の反転
   └─ PlayerPrefs              音量 / 部屋コード / 参加者トークン
                  │ HTTPS + JSON
@@ -45,17 +45,17 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <section id="client" class="purple">
 <h2>2. Unityクライアントの責務</h2>
 <div class="table-wrap"><table><thead><tr><th>ファイル</th><th>主な型・関数</th><th>責務</th></tr></thead><tbody>
-<tr><td class="mono">CardCatalog.cs</td><td><code>CardData</code> / <code>CharacterData</code> / <code>BuildDeck</code></td><td>カードの基本値・効果文・公式フレーバーテキスト・キャラクター情報・3人編成からの山札生成。</td></tr>
+<tr><td class="mono">CardCatalog.cs</td><td><code>CardData</code> / <code>CharacterData</code> / <code>BuildDeck</code></td><td>カードの基本値・効果文・公式フレーバーテキスト、キャラクターの所属・HP・推奨位置・Range・戦闘評価、3人編成からの山札生成。</td></tr>
 <tr><td class="mono">AlterActPrototype.cs</td><td><code>CommitPlacement</code> / <code>Simulate</code> / <code>ResolveTime</code></td><td>局面状態、配置・Cost・対象指定、NPC、ダメージ予測、盤面UI。</td></tr>
-<tr><td class="mono">AlterActPrototype.Navigation.cs</td><td><code>ShowTitleScreen</code> / <code>ShowPlayModeMenu</code> / <code>ShowCardLibrary</code> / <code>ShowDeckSelection</code></td><td>ホームから対戦方式・編成・カードリスト・設定へ分岐し、対局までの画面遷移と設定値を管理する。</td></tr>
+<tr><td class="mono">AlterActPrototype.Navigation.cs</td><td><code>ShowTitleScreen</code> / <code>ShowPlayModeMenu</code> / <code>ShowCardLibrary</code> / <code>ShowDeckSelection</code></td><td>ホームから対戦方式・編成・キャラクター図鑑・設定へ分岐し、対局までの画面遷移と設定値を管理する。</td></tr>
 <tr><td class="mono">AlterActPrototype.Online.cs</td><td><code>TryPublishOnlineState</code> / <code>RestoreOnlineGameState</code></td><td>部屋作成・参加・ポーリング・状態の送受信・PLAYER B視点の変換。</td></tr>
 <tr><td class="mono">AlterActUiEffects.cs</td><td><code>CardHoverEffect</code> / <code>UiPulseEffect</code></td><td>手札ホバー、選択・配置・ダメージ演出の補助。</td></tr>
 </tbody></table></div>
 <h3>起動と画面遷移</h3>
 <div class="flow"><span class="node">RuntimeInitializeOnLoadMethod</span><span class="arrow">→</span><span class="node">StartPrototype / Awake</span><span class="arrow">→</span><span class="node">ShowTitleScreen（ホーム）</span><span class="arrow">→</span><span class="node">PLAY / DECK / CARD LIBRARY</span><span class="arrow">→</span><span class="node">対局・編成・参照</span></div>
 <p>UIはUnity Editor上の固定レイアウトに依存せず、<code>CreateCanvas</code>、<code>Panel</code>、<code>Label</code>、<code>Button</code>で実行時に生成します。<code>CreateCanvas</code>はScreen Space Overlayの<code>pixelPerfect</code>を有効化し、端数座標による文字のぼけを抑えます。同梱Noto Sans CJK JPはHinted Smoothで描画します。WebGLテンプレートはタッチ端末の描画倍率を最低2・最大4、非タッチ端末を最大2に制限します。<code>Update</code>で縦横と狭幅横画面の切替を監視し、変化時は<code>RebuildForOrientationChange</code>で局面状態を維持したまま画面を組み直し、続けて<code>RefreshBoardState</code>で配置カード・裏向き・対象選択・LOSTの色を復元します。横画面は盤面と下部のプレビュー／手札／操作を分離し、幅1700未満では編成・手札カードを圧縮します。縦画面は実際の縦横比から<code>_portraitBoardExtra</code>を算出し、基準解像度を超える高さを6キャラクター行へ均等配分して盤面と手札の空白を防ぎます。背景グリッドと左端アクセント線は上下ストレッチアンカーで全高を覆ります。<code>RefreshTargetArrows</code>の最後では、表示中のトークン選択・履歴パネルを再び最前面へ上げ、再生成された矢印やダメージ数字が操作面へ重ならないようにします。</p>
-<h3>ホームとカードリスト</h3>
-<p><code>ShowTitleScreen</code>はホームの4導線を生成し、<code>ShowPlayModeMenu</code>だけが対戦方式選択をモーダル表示します。<code>ShowCardLibrary</code>は<code>CardCatalog.Cards</code>からカードグリッドを構築します。<code>SetCardLibraryFilter</code>がALLまたはキャラクター名を保持し、<code>RefreshCardLibraryGrid</code>が該当カードだけを再生成します。<code>SelectLibraryCard</code>と<code>RefreshCardLibrarySelection</code>は基本値、効果文、キャラクター効果、<code>CardData.FlavorText</code>を詳細欄へ反映します。画面回転時は<code>AppScreen.CardLibrary</code>を判定して一覧画面を再生成し、選択中カードとフィルターを維持します。</p>
+<h3>ホームとキャラクター図鑑</h3>
+<p><code>ShowTitleScreen</code>はホームの4導線を生成し、<code>ShowPlayModeMenu</code>だけが対戦方式選択をモーダル表示します。<code>ShowCardLibrary</code>は9人のキャラクター一覧、プロフィール、専用カード3種類の領域を構築します。<code>SelectLibraryCharacter</code>が選択中のキャラクター名を保持し、<code>RefreshCharacterLibrary</code>が<code>CardCatalog.Characters</code>の所属・HP・推奨位置・主なRange・5評価・固有効果と、<code>CardCatalog.Cards</code>から該当する3種類の能力・効果文・<code>CardData.FlavorText</code>を再生成します。画面回転時は<code>AppScreen.CardLibrary</code>を判定して図鑑画面を再生成し、<code>_selectedLibraryCharacter</code>を維持します。</p>
 </section>
 
 <section id="state" class="green">
