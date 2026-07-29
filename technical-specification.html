@@ -18,7 +18,7 @@
   <p class="eyebrow">ALTERACT // IMPLEMENTATION REFERENCE</p>
   <h1>技術仕様書</h1>
   <p class="lead">Unityクライアント、ゲーム進行ロジック、ダメージ予測、通信対戦サーバー、途中復帰の実装構造を説明する開発者向け文書です。ゲームルールと画面要件は<a href="specification.html">ソフトウェア仕様書</a>を参照してください。</p>
-  <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.5</span><span class="pill">最終更新 2026-07-28</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
+  <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.6</span><span class="pill">最終更新 2026-07-29</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
 </div></header>
 <nav><div><a href="#overview">全体像</a><a href="#client">Unity構成</a><a href="#state">状態モデル</a><a href="#turn">手番・配置</a><a href="#damage">ダメージ解決</a><a href="#online">通信・復帰</a><a href="#server">サーバー</a><a href="#rules">変更時の注意</a></div></nav>
 <main class="content">
@@ -35,11 +35,12 @@
                  ▼
 Render: alteract-match (Express)
   ├─ app.mjs                  API、手番・バージョン検証
-  └─ room-store.mjs           部屋保存抽象
+  ├─ state-validator.mjs      編成・状態・所有・保存則検証
+  └─ room-store.mjs           Redis / JSON、原子的CAS保存
                  │ TLS Redis
                  ▼
 Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時間</pre>
-<div class="note good">通信サーバーは「正しいクライアント同士の同期と途中復帰」を担当します。カード効果の完全な不正入力検証は、Public Beta 0.9.0ではUnityクライアント側が担う既知の制約です。</div>
+<div class="note good">通信サーバーは同期・途中復帰に加え、実装済みキャラクター、24枚のカード保存則、盤面座標、積層、所有者、HP、スター、特殊弾を検証します。個々のカード効果とダメージをサーバーだけで再計算する完全な権威サーバー化は継続項目です。</div>
 </section>
 
 <section id="client" class="purple">
@@ -125,7 +126,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <h3>PLAYER B視点の反転</h3>
 <p>クライアント内部では常に「自分」をローカルplayer 0、「相手」をローカルplayer 1としてUIを描きます。通信データは部屋の正規順序で保存するため、<code>CanonicalPlayer</code>と<code>LocalPlayer</code>がPLAYER Bでは0/1を反転します。これにより参加側も自分のチームが常に画面下に表示されます。</p>
 <h3>競合防止</h3>
-<p>保存要求には<code>expectedVersion</code>を含めます。サーバーの最新<code>version</code>と一致しなければ409 <code>VERSION_CONFLICT</code>を返し、クライアントはサーバー状態を復元します。また、初期化以外の保存は現在の手番プレイヤーだけが実行できます。</p>
+<p>保存要求には<code>expectedVersion</code>を含めます。Redisでは保存済みJSONとの比較と置換をLuaで1操作にし、ファイル保存でも同じcompare-and-setを直列化します。一致しない更新は409 <code>VERSION_CONFLICT</code>を返します。同時入室も同じ方式で1件だけを確定し、約1.25秒ごとのGETは読み取り専用なので、新しい盤面を古いポーリング結果が上書きしません。</p>
 <div class="note">部屋コードと参加者トークンを端末の<code>PlayerPrefs</code>へ保存します。IPアドレスは復帰の識別子に使いません。トークンを失った端末からは、同じ部屋でも復帰できません。</div>
 </section>
 
@@ -135,15 +136,16 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <tr><td><code>server/src/app.mjs</code></td><td><code>createApp(store)</code></td><td>Express、CORS、JSON上限2MB、HTTP API、エラー応答を構築する。</td></tr>
 <tr><td><code>app.mjs</code></td><td><code>randomCode</code> / <code>randomToken</code></td><td>紛らわしい文字を除いた6文字コードと、暗号学的乱数の参加トークンを発行する。</td></tr>
 <tr><td><code>app.mjs</code></td><td><code>roomView</code></td><td>トークンを含めずに返す共通の部屋応答を生成する。作成・参加の直後だけ個別トークンを付与する。</td></tr>
+<tr><td><code>server/src/state-validator.mjs</code></td><td><code>normalizeDeck</code> / <code>validateStatePayload</code></td><td>9人の重複なし編成、状態schema、チーム、カード保存則、盤面座標、積層、対象、HP、トークン供給、相手所有領域の不変条件を検証する。</td></tr>
 <tr><td><code>server/src/room-store.mjs</code></td><td><code>RoomStore</code></td><td><code>REDIS_URL</code>があればRedis、なければローカルJSONファイルを使う保存抽象。</td></tr>
-<tr><td><code>RoomStore.set</code></td><td><code>redis.set(... EX: 86400)</code></td><td><code>alteract:room:&lt;code&gt;</code>へ保存し、24時間のTTLを毎回更新する。</td></tr>
+<tr><td><code>RoomStore.create</code> / <code>compareAndSet</code></td><td><code>SET NX</code> / Lua比較置換</td><td><code>alteract:room:&lt;code&gt;</code>を24時間TTLで保存し、同時要求による二重入室・状態巻き戻しを防ぐ。</td></tr>
 </tbody></table></div>
 <h3>API契約</h3>
 <div class="table-wrap"><table><thead><tr><th>HTTP</th><th>入力</th><th>サーバー処理</th><th>主な失敗</th></tr></thead><tbody>
 <tr><td><code>POST /api/rooms</code></td><td>3人の<code>deck</code>、先攻モード</td><td>待機部屋・PLAYER 1トークン・乱数seedを作成。</td><td><code>INVALID_DECK</code></td></tr>
 <tr><td><code>POST /api/rooms/:code/join</code></td><td>3人の<code>deck</code></td><td>PLAYER 2を追加し、先攻と手番を確定。</td><td><code>ROOM_NOT_FOUND</code> / <code>ROOM_FULL</code></td></tr>
-<tr><td><code>GET /api/rooms/:code</code></td><td>参加トークン</td><td>認証、TTL更新、部屋の状態返却。</td><td><code>INVALID_TOKEN</code> / <code>ROOM_EXPIRED</code></td></tr>
-<tr><td><code>PUT /api/rooms/:code/state</code></td><td>token / expectedVersion / state</td><td>バージョン・手番・サイズを検証して確定状態を保存。</td><td><code>VERSION_CONFLICT</code> / <code>NOT_YOUR_TURN</code></td></tr>
+<tr><td><code>GET /api/rooms/:code</code></td><td>参加トークン</td><td>認証後、保存内容を変更せず部屋状態を返却。</td><td><code>INVALID_TOKEN</code> / <code>ROOM_EXPIRED</code></td></tr>
+<tr><td><code>PUT /api/rooms/:code/state</code></td><td>token / expectedVersion / state</td><td>手番・version・状態不変条件を検証し、CASで確定状態を保存。</td><td><code>INVALID_STATE</code> / <code>VERSION_CONFLICT</code> / <code>NOT_YOUR_TURN</code></td></tr>
 <tr><td><code>GET /health</code></td><td>なし</td><td>稼働状況と<code>storage: redis|file|memory</code>を返す。</td><td>—</td></tr>
 </tbody></table></div>
 <p>本番はRenderの秘密環境変数<code>REDIS_URL</code>から、東京リージョンのUpstash RedisへTLS接続します。Render再起動および自動再デプロイの後も、保存した部屋・状態・バージョンを取得できることを実測済みです。</p>
