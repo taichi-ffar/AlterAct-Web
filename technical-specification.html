@@ -63,6 +63,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <p><code>BuildRandomRecommendedFormation</code>は9人から前衛・中衛・後衛の全順列を列挙し、各位置の文字を<code>CharacterData.RecommendedPosition</code>に含む重複なし候補だけを残して<code>GameRandom</code>で1組選びます。<code>ApplyRandomRecommendedFormation</code>は通信対戦では自分側、NPC／ローカルでは両側へ適用します。</p>
 <p><code>NpcPlacementScore</code>は従来のAttack・Barrier・Range・Cost基礎点に、射程内対象の有無、撃破可能性、時刻直前の予測HP、同時刻の予測被ダメージ、Barrierによる生存可能性、LOST済み配置の損失、序盤の準備カード、終盤の攻撃を加点・減点します。<code>ChooseNpcTarget</code>は生存かつ射程内を優先し、撃破可能、低HP、将来の配置脅威、距離の順に比較します。<code>NpcTryAlterAct</code>は毎手番で検討し、置換前後の評価差から追加Cost相当を差し引いても閾値を超える場合だけ実行します。</p>
 <h3>チュートリアル</h3>
+<p><code>TutorialDialogueBottom</code>は「盤面外」「盤面下部」「盤面中央」「盤面上部」を横画面の4段位置へ変換し、時点指定Cueではキャラクターヘッダーを無効化します。最終クリアCueへ到達した場合は通常会話として再表示せず、そのまま<code>CompleteTutorialStage</code>へ進みます。</p>
 <p><code>AlterActPrototype.Tutorial.cs</code>が基礎4ステージとキャラクター別9ステージを管理します。<code>Resources/Tutorial/tutorial_dialogue.json</code>の基礎33 Cueと<code>Resources/Tutorial/character_trial_design.json</code>のキャラクター109 Cueを読み込み、実行時に13ステージ・142 Cueへ統合します。キャラクター本人の口調や新規台詞を使用せず、キャラクター別データは<code>SYSTEM</code>案内に限定します。全ステージは<code>playerFormation</code>と<code>npcFormation</code>を持ち、<code>InitializeTutorialBattle</code>が通常対戦の状態モデルへ固定手札・初期配置・対象・特殊弾・スター・HP・裏向きSTACKを投入します。旧固定教材盤面の<code>scenarioCells</code>、<code>choiceOptions</code>、<code>correctChoice</code>は使用しません。<code>TutorialZone</code>は受動的な「確認」を<code>Guide</code>へ分類します。<code>BuildTutorialBattleDialogue</code>は大型会話ウィンドウと入力を遮らない暗転レイヤーを生成し、確認Cueでは盤面入力を無効化して「次へ」を表示します。<code>RaiseTutorialConfirmationFocus</code>は対象キャラクター欄・時刻マス・配置済みカード・スター・攻撃矢印だけを暗幕より前へ描画します。配置済みカードが対象の場合は<code>IsTutorialConfirmationCardSlot</code>がそのマスだけを参照可能にし、<code>TryShowTutorialConfirmationCardDetail</code>が通常対戦と同じ<code>ShowBoardCardDetail</code>を呼びます。CARD PREVIEWもsorting order 41で暗幕より前へ出し、参照クリックではCueを進めません。能動操作Cueでは<code>RaiseTutorialBattleFocus</code>が操作可能な実UIへ個別Canvasとシアン枠を付けて暗転より前面へ描画します。設定UIは<code>RaiseSettingsLayer</code>によりSETTINGSボタンをsorting order 900、設定メニューを1000へ固定し、チュートリアル案内を含む他の画面要素より上で入力を受けます。</p>
 <p>基礎4レッスンは<code>InitializeTutorialBattle</code>で固定手札・固定初期局面を通常対戦の状態モデルへ投入し、<code>BuildBattleScreen</code>をそのまま構築します。案内は既存のNEXT ACTIONへ表示し、<code>ConfigureTutorialBattleHand</code>、<code>ConfigureTutorialBattleBoard</code>、<code>ConfigureTutorialBattleControls</code>が現在Cueで正しい実UIだけを有効化します。操作は専用の擬似配置へ変換せず、<code>SelectCard</code>、<code>SlotClicked</code>、<code>PlaceCard</code>、<code>TogglePaymentCard</code>、<code>ConfirmPayment</code>、<code>CommitPlacement</code>、<code>SelectTarget</code>を通ります。このため手札・山札・スタック・通常Cost・AlterAct Cost・裏向き・対象・ダメージ予測は通常対戦と同じ処理結果になります。<code>NotifyTutorialBattleAction</code>は処理後の実状態を検査してCueを進めます。受動的な「確認」Cueは<code>Guide</code>へ分類し、確認対象だけをスポットライト表示したまま盤面入力を無効化し、`次へ`で進行させます。</p>
 <p>キャラクター別9トライアルも基礎レッスンと同じ実戦盤面を使用します。109 Cueは、ラプラ＝低Barrierへのヘッドショット／複数被対象へのクリアリング、サキ＝高Barrierへの居合／致命傷への見切り、ヘイゼ＝Range外への電子弾／高Barrierへの量子弾、アイネ＝孤高の棺柩から混沌の領域、ステラ＝味方Attack時点へのスターからShooting Star、マクス＝デモン・チャージの裏向き格納からビット・バーストAlterActの裏向き4枚、リンゴ＝飛躍する果実から落下する果実、ロア＝蝶の羽ばたきから嵐の輪舞曲、シュロ＝早いすいっちおん！とLOST後のざんねんでした！を扱います。各Cueは<code>ConfigureTutorialBattleHand</code>、<code>ConfigureTutorialBattleBoard</code>、<code>ConfigureTutorialBattleControls</code>、<code>ConfigureTutorialTokenChoices</code>で許可する実UIを限定します。入力後は<code>NotifyTutorialBattleAction</code>が配置カード、支払い段階、対象、特殊弾、返却手札、スター、マクスの格納先と裏向き状態を実データから検査し、達成時だけ次へ進めます。<code>CompleteTutorialStage</code>でステージ別の<code>PlayerPrefs</code>へ保存し、基礎は順次解放、B04完了後に9つのキャラクタートライアルを解放します。</p>
@@ -81,6 +82,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <tr><td><code>_random</code></td><td><code>GameRandom</code></td><td>xorshift系の決定的乱数。内部<code>State</code>も通信スナップショットに含める。</td></tr>
 </tbody></table></div>
 <h3>Undoの境界</h3>
+<p>対象・トークン選択中もUndoを許可し、復元時に保留中の選択モードとモーダルを閉じます。デモン・チャージのHP+2は表向きを選んだ時だけ適用し、裏向き選択では効果を発生させません。</p>
 <p><code>TurnActionSnapshot</code>は手札・山札・盤面・積層・対象・トークン・HP・ログ・手番進行を深く複製します。<code>CommitPlacement</code>の直前に<code>SaveUndoSnapshot</code>を呼び、同一手番内の確定操作だけを<code>UndoLastTurnAction</code>で戻します。メモリ・リセットは<code>ShowMemoryResetConfirmation</code>でドロー前に不可逆確認を行い、ドロー後にUndoスタックを消去して見たカードを利用した巻き戻しを防ぎます。通信中は確定後に送信されるため、復帰対象は「途中の選択」ではなく「最後に確定した局面」です。</p>
 </section>
 
@@ -113,6 +115,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
   直接ダメージ + max(0, 通常ダメージ - Barrier) をHPへ反映
   HP 0以下のキャラクターをLOSTにする</pre>
 <h3><code>ResolveTime</code>の順序</h3>
+<p>混沌の領域の矢印予測は通常Attack/Rangeではなく、固有Range 3と時刻別2/3/4ダメージを使います。</p>
 <ol><li>その時刻で行動できるカードから有効ステータスを算出し、Barrierを対象キャラクター単位で合計する。</li><li>混沌の領域・飛躍する果実など、個別の即時ダメージを通常ダメージへ加算する。</li><li>攻撃カードは対象の有無、対象の生存、Range、見切りブロックを順に検証する。通れば通常または軽減不能ダメージへ加える。</li><li>シュロの「すいっちおん！」が過去の時刻から持ち越す遅延ダメージを加える。</li><li><code>direct + max(0, normal - barrier)</code> を計算し、浮遊中で合計6以上なら0に置換する。</li></ol>
 <h3>Range距離</h3>
 <p><code>Coordinate</code>はプレイヤーAを前→後で2,1,0、プレイヤーBを前→後で3,4,5へ並べます。<code>Distance</code>はこの両端の間にいる<strong>生存キャラクター数</strong>を数えるため、LOSTが発生すると同じ前後配置でも射程距離が変わります。これが「Rangeは縦方向に影響する」実装です。</p>
@@ -121,6 +124,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 
 <section id="online" class="purple">
 <h2>6. 通信対戦と途中復帰</h2>
+<p><code>UpdateOnlineBattleStatus</code>は相手手番中も手札ボタンを参照用に有効化し、<code>SelectCard</code>の待機分岐はプレイ選択状態を変えずにプレビューだけを更新します。盤面再描画を抑止するのは対象選択中またはスター配置先選択中だけとし、その候補色をポーリング表示更新で消去しません。</p>
 <div class="flow"><span class="node">POST /rooms<br>部屋作成</span><span class="arrow">→</span><span class="node">POST /join<br>2人目参加</span><span class="arrow">→</span><span class="node">ホストが初期局面を保存</span><span class="arrow">→</span><span class="node">約1.25秒ごとにGET</span><span class="arrow">→</span><span class="node">確定操作だけPUT</span></div>
 <p><code>OnlineGameState</code>は手札・山札をカードID配列で、盤面・スタック・対象・トークンをキー値配列で保存します。乱数状態、HP、ログ、時刻演出済みフラグも含むため、再読込後に同じ山札順と盤面へ戻れます。</p>
 <h3>PLAYER B視点の反転</h3>
