@@ -47,7 +47,10 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <h2>2. Unityクライアントの責務</h2>
 <div class="table-wrap"><table><thead><tr><th>ファイル</th><th>主な型・関数</th><th>責務</th></tr></thead><tbody>
 <tr><td class="mono">CardCatalog.cs</td><td><code>CardData</code> / <code>CharacterData</code> / <code>BuildDeck</code></td><td>アクションカードの基本値・効果文・公式フレーバーテキスト、キャラクターカードの公式フレーバーテキスト・所属・HP・推奨位置・Range・戦闘評価、3人編成からの山札生成。</td></tr>
-<tr><td class="mono">AlterActPrototype.cs</td><td><code>CommitPlacement</code> / <code>Simulate</code> / <code>ResolveTime</code></td><td>局面状態、配置・Cost・対象指定、NPC、ダメージ予測、盤面UI。</td></tr>
+<tr><td class="mono">AlterActPrototype.cs</td><td><code>CommitPlacement</code> / <code>Simulate</code> / <code>ResolveTime</code></td><td>配置・Cost・対象指定、NPC、ダメージ予測と盤面UIを接続する対戦コントローラー。</td></tr>
+<tr><td class="mono">BattleRules.cs</td><td><code>ScheduledAdvances</code> / <code>ResolveDamage</code> / <code>DetermineWinner</code></td><td>Unity UIから独立したターン、座標・距離、ダメージ、勝敗の純粋ルール。</td></tr>
+<tr><td class="mono">BattleTurnSnapshot.cs</td><td><code>BattleTurnSnapshot</code> / <code>RestoreCollections</code></td><td>手札、山札、配置、積層、対象、トークン、HP、手番状態を深いコピーで保存・復元するUI非依存のUndoモジュール。</td></tr>
+<tr><td class="mono">BattleRandom.cs</td><td><code>Reseed</code> / <code>Restore</code></td><td>NPC・シャッフルで共有する、シード指定と状態復元が可能な決定的乱数器。</td></tr>
 <tr><td class="mono">AlterActPrototype.Navigation.cs</td><td><code>ShowTitleScreen</code> / <code>ShowPlayModeMenu</code> / <code>ShowCardLibrary</code> / <code>ShowDeckSelection</code></td><td>ホームから対戦方式・編成・キャラアーカイブ・設定へ分岐し、対局までの画面遷移と設定値を管理する。</td></tr>
 <tr><td class="mono">CharacterRadarGraphic.cs</td><td><code>SetRatings</code> / <code>OnPopulateMesh</code></td><td>5項目の戦闘評価から三段階グリッド、軸、塗りつぶし五角形、頂点をUIメッシュとして描画する。</td></tr>
 <tr><td class="mono">AlterActPrototype.Tutorial.cs</td><td><code>ShowTutorialSelection</code> / <code>ShowTutorialBattleStage</code> / <code>InitializeTutorialBattle</code> / <code>NotifyTutorialBattleAction</code></td><td>13ステージの解放、142 Cueの案内、全ステージ共通の実戦盤面、固定手札・初期局面、操作制限、実状態による達成判定、クリア進捗を管理する。</td></tr>
@@ -166,7 +169,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <li>Upstash無料DBは長期間アクセスがない場合に休止・アーカイブされる可能性があります。部屋自体は最終アクセスから24時間で意図的に失効します。</li>
 </ul>
 <h3>確認手順</h3>
-<ol><li>サーバー: <code>node --test</code>でAPI・競合・ヘルスのテストを実行する。</li><li>Unity: PlayModeスモークでタイトル、編成、配置、Cost、AlterAct、トークン、Undo、結果を確認する。</li><li>通信: 2ブラウザで作成→参加→確定→再読込→復帰を確認する。</li><li>本番: <a href="https://alteract-match.onrender.com/health">/health</a>の<code>storage</code>が<code>redis</code>であることを確認する。</li></ol>
+<ol><li>サーバー: <code>node --test</code>でAPI・競合・ヘルスのテストを実行する。</li><li>Unity EditMode: ターン進行、ダメージ、距離、勝敗判定とカード／チュートリアルデータを確認する。</li><li>Unity PlayMode: 本番シーン起動、タイトルから編成・対戦への遷移、配置、Cost、AlterAct、対象指定、ステラのトークン、Undo、最終ターンから結果表示までを確認する。</li><li>通信: 2ブラウザで作成→参加→確定→再読込→復帰を確認する。</li><li>本番: <a href="https://alteract-match.onrender.com/health">/health</a>の<code>storage</code>が<code>redis</code>であることを確認する。</li></ol>
 </section>
 </main>
 <footer class="content">AlterAct Technical Specification ・ 実装更新時はこの文書、<a href="specification.html">ソフトウェア仕様書</a>、デバッグ評価チェックリストを同期更新する。</footer>
