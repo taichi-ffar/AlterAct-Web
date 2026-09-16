@@ -312,8 +312,8 @@
       <div class="meta">
         <span class="pill live">公開中</span>
         <span class="pill prototype">Public Beta 0.9.0</span>
-        <span class="pill">文書版 1.7</span>
-        <span class="pill">最終更新 2026-07-29</span>
+        <span class="pill">文書版 1.8</span>
+        <span class="pill">最終更新 2026-08-24</span>
         <span class="pill">Unity 6000.5.4f1</span>
       </div>
     </div>
@@ -412,7 +412,7 @@
         </ol>
         <ul>
           <li>起動直後は必ずホームを表示し、PLAY・DECK・CHARACTER ARCHIVE・SETTINGSを提示する。</li>
-          <li>PLAYでNPC・ローカル・通信のいずれかを選んだ後、編成へ進む。</li>
+          <li>PLAYでNPC・ローカル・通信のいずれかを選んだ後、編成へ進む。NPC対戦では編成画面で「弱い／強い」を切り替え、初期値を「強い」とする。</li>
           <li>DECKは対戦方式を確定せず編成画面を開き、CHARACTER ARCHIVEはキャラアーカイブを開く。</li>
           <li>TUTORIALは基礎4レッスンと、実装済み9キャラクターのトライアル選択を開く。</li>
           <li>設定ボタンは全画面の右上に表示し、編成中・対戦中もホームへ戻れる。</li>
@@ -428,7 +428,7 @@
               <tr><th>モード</th><th>PLAYER A</th><th>PLAYER B</th><th>通信</th><th>復帰</th></tr>
             </thead>
             <tbody>
-              <tr><td>NPC対戦</td><td>ユーザー</td><td>NPC</td><td>不要</td><td>なし</td></tr>
+              <tr><td>NPC対戦</td><td>ユーザー</td><td>NPC（弱い／強い）</td><td>不要</td><td>なし</td></tr>
               <tr><td>ローカル対戦</td><td>ユーザー</td><td>同一端末のユーザー</td><td>不要</td><td>なし</td></tr>
               <tr><td>通信対戦</td><td>部屋作成者または参加者</td><td>遠隔ユーザー</td><td>必須</td><td>確定操作単位</td></tr>
             </tbody>
@@ -494,7 +494,7 @@
               <tr><td>FR-011</td><td>設定</td><td>音量、全画面、タイトル復帰を共通メニューから操作する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-012</td><td>キャラアーカイブ</td><td>9人からキャラクターを選び、キャラクターカード一覧の公式フレーバーテキスト、戦闘プロフィール、キャラクター効果、各アクションカードの能力・効果・公式フレーバーテキストを参照する。</td><td class="status-yes">実装済</td></tr>
               <tr><td>FR-013</td><td>チュートリアル</td><td>基礎4レッスンとキャラクター別9トライアルを提供する。全13ステージが通常対戦と同じ画面、入力関数、手札・山札・盤面・STACK、Cost・対象・トークン・AlterAct判定を使う。キャラクタートライアルは相手のBarrier・Range・被対象数・致命傷見込み・スター・特殊弾・裏向き枚数・LOST状態を読み、109 Cueに沿って実カードを選択し、時点へ配置し、Cost・対象・固有選択を確定する。固定選択肢だけの教材盤面は使用しない。キャラクターの新規台詞を作らずSYSTEM案内を用い、誤操作では実状態とCueを進めない。受動的な確認Cueは確認対象だけを暗幕より前へ強調し、`次へ`で進行する。配置済みカードの確認では対象マスだけを参照操作でき、暗幕より前に出したCARD PREVIEWでカード名・Cost・種別・ステータス・効果全文・キャラクター効果を表示する。参照操作だけではCueを進めない。設定ボタンと設定メニューは専用の最前面レイヤーを使い、チュートリアル案内を含む他のUIより前で表示・操作できる。</td><td class="status-yes">実装済</td></tr>
-              <tr><td>FR-014</td><td>NPC戦術</td><td>射程、撃破見込み、予測HP、被ダメージ、LOST見込み、将来の盤面脅威、AlterAct差益から合法手を比較する。</td><td class="status-yes">実装済</td></tr>
+              <tr><td>FR-014</td><td>NPC戦術</td><td>SOLO編成画面で「弱い／強い」を選び、対戦画面へ選択中の強さを表示する。「弱い」は従来のAttack・Barrier・Range・Costを中心とした基本評価、対象・特殊弾・スター・支払い・裏向き配置を使用する。「強い」は候補の仮置き後を時刻4まで再計算し、残HP、LOST、射程、Barrier、固有効果と前後時点の連携、対象カードの脅威、支払いカードの将来価値、AlterAct差益から合法手を比較する。見切りなどの対象効果と、ヘイゼの特殊弾、ステラのスター、アイネの石棺を局面に応じて選ぶ。</td><td class="status-yes">実装済</td></tr>
             </tbody>
           </table>
         </div>
@@ -591,12 +591,13 @@
           <li>6文字の部屋コードとプレイヤー別トークンを使用する。</li>
           <li>クライアントは約1.25秒間隔で部屋状態をポーリングする。</li>
           <li>サーバーは手番所有者と期待バージョンを検証し、古い更新を拒否する。</li>
+          <li>最初の状態保存は部屋ホストだけが行い、確定済み先手、第1ラウンド、正規初手、空盤面を保持する開始局面だけを受理する。</li>
           <li>部屋作成・入室・状態保存は原子的なcompare-and-setで確定し、同時入室と状態巻き戻しを防止する。</li>
           <li>ポーリングは読み取り専用とし、保存中の新しい盤面を古い取得結果で上書きしない。</li>
-          <li>サーバーは9人の重複なし編成、24枚のカード保存則、盤面座標・積層・所有者・HP・スター・特殊弾を検証する。</li>
+          <li>サーバーは9人の重複なし編成、24枚のカード保存則、盤面座標・積層・所有者、手番・ラウンド遷移、終了可能時点、HP・デモン・チャージ由来のボーナスHP・スター・特殊弾・石棺を検証する。</li>
           <li>本番環境は東京リージョンのUpstash Redisへ確定済み状態を保存し、Renderサービス再起動後も復帰できる。</li>
           <li>相手手番の待機中も自分の手札は効果参照だけ可能とし、配置などの状態変更は拒否する。自分手番のスター候補・対象候補の強調色はポーリング更新で消去しない。</li>
-          <li>部屋は最後の確定書き込みから24時間で期限切れになる。</li>
+          <li>部屋は作成・参加・確定状態保存のうち最後の部屋更新から24時間で期限切れになり、期限切れ後の参加・保存と終了済み対戦への再保存を拒否する。</li>
         </ul>
         <h3>HTTP API</h3>
         <div class="table-wrap">
@@ -606,7 +607,7 @@
               <tr><td>POST</td><td class="mono">/api/rooms</td><td>部屋を作成し、PLAYER 1トークンを発行する。</td></tr>
               <tr><td>POST</td><td class="mono">/api/rooms/:code/join</td><td>部屋へ参加し、PLAYER 2トークンを発行する。</td></tr>
               <tr><td>GET</td><td class="mono">/api/rooms/:code?token=...</td><td>状態の取得、待機、途中復帰。</td></tr>
-              <tr><td>PUT</td><td class="mono">/api/rooms/:code/state</td><td>確定済みゲーム状態をバージョン付きで保存する。</td></tr>
+              <tr><td>PUT</td><td class="mono">/api/rooms/:code/state</td><td>初回はホストの正規開始局面を、以後は確定済みゲーム状態をバージョン付きで保存する。</td></tr>
               <tr><td>GET</td><td class="mono">/health</td><td>サーバーと使用中ストレージのヘルスチェック。</td></tr>
             </tbody>
           </table>

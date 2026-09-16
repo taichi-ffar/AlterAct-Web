@@ -18,7 +18,7 @@
   <p class="eyebrow">ALTERACT // IMPLEMENTATION REFERENCE</p>
   <h1>技術仕様書</h1>
   <p class="lead">Unityクライアント、ゲーム進行ロジック、ダメージ予測、通信対戦サーバー、途中復帰の実装構造を説明する開発者向け文書です。ゲームルールと画面要件は<a href="specification.html">ソフトウェア仕様書</a>を参照してください。</p>
-  <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.6</span><span class="pill">最終更新 2026-07-29</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
+  <div class="pills"><span class="pill">Public Beta 0.9.0</span><span class="pill">文書版 1.7</span><span class="pill">最終更新 2026-08-24</span><span class="pill">Unity 6000.5.4f1</span><span class="pill">Node / Express / Redis</span></div>
 </div></header>
 <nav><div><a href="#overview">全体像</a><a href="#client">Unity構成</a><a href="#state">状態モデル</a><a href="#turn">手番・配置</a><a href="#damage">ダメージ解決</a><a href="#online">通信・復帰</a><a href="#server">サーバー</a><a href="#rules">変更時の注意</a></div></nav>
 <main class="content">
@@ -40,7 +40,7 @@ Render: alteract-match (Express)
                  │ TLS Redis
                  ▼
 Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時間</pre>
-<div class="note good">通信サーバーは同期・途中復帰に加え、実装済みキャラクター、24枚のカード保存則、盤面座標、積層、所有者、HP、スター、特殊弾を検証します。個々のカード効果とダメージをサーバーだけで再計算する完全な権威サーバー化は継続項目です。</div>
+<div class="note good">通信サーバーは同期・途中復帰に加え、実装済みキャラクター、24枚のカード保存則、盤面座標、積層、所有者、手番・ラウンド遷移、終了可能時点、HP、デモン・チャージ由来のボーナスHP、スター、特殊弾、石棺を検証します。個々のカード効果とダメージをサーバーだけで再計算する完全な権威サーバー化は継続項目です。</div>
 </section>
 
 <section id="client" class="purple">
@@ -53,7 +53,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <tr><td class="mono">BattleRandom.cs</td><td><code>Reseed</code> / <code>Restore</code></td><td>NPC・シャッフルで共有する、シード指定と状態復元が可能な決定的乱数器。</td></tr>
 <tr><td class="mono">AlterActPrototype.Navigation.cs</td><td><code>ShowTitleScreen</code> / <code>ShowPlayModeMenu</code> / <code>ShowCardLibrary</code> / <code>ShowDeckSelection</code></td><td>ホームから対戦方式・編成・キャラアーカイブ・設定へ分岐し、対局までの画面遷移と設定値を管理する。</td></tr>
 <tr><td class="mono">CharacterRadarGraphic.cs</td><td><code>SetRatings</code> / <code>OnPopulateMesh</code></td><td>5項目の戦闘評価から三段階グリッド、軸、塗りつぶし五角形、頂点をUIメッシュとして描画する。</td></tr>
-<tr><td class="mono">AlterActPrototype.Tutorial.cs</td><td><code>ShowTutorialSelection</code> / <code>ShowTutorialBattleStage</code> / <code>InitializeTutorialBattle</code> / <code>NotifyTutorialBattleAction</code></td><td>13ステージの解放、142 Cueの案内、全ステージ共通の実戦盤面、固定手札・初期局面、操作制限、実状態による達成判定、クリア進捗を管理する。</td></tr>
+<tr><td class="mono">AlterActPrototype.Tutorial.cs</td><td><code>ShowTutorialSelection</code> / <code>ShowTutorialBattleStage</code> / <code>InitializeTutorialBattle</code> / <code>NotifyTutorialBattleAction</code></td><td>13ステージの解放、168 Cueの案内、全ステージ共通の実戦盤面、固定手札・初期局面、操作制限、実状態による達成判定、クリア進捗を管理する。</td></tr>
 <tr><td class="mono">AlterActPrototype.Online.cs</td><td><code>TryPublishOnlineState</code> / <code>RestoreOnlineGameState</code></td><td>部屋作成・参加・ポーリング・状態の送受信・PLAYER B視点の変換。</td></tr>
 <tr><td class="mono">AlterActUiEffects.cs</td><td><code>CardHoverEffect</code> / <code>UiPulseEffect</code></td><td>手札ホバー、選択・配置・ダメージ演出の補助。</td></tr>
 </tbody></table></div>
@@ -64,10 +64,10 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <p><code>ShowTitleScreen</code>はホームの4導線を生成し、<code>ShowPlayModeMenu</code>だけが対戦方式選択をモーダル表示します。<code>ShowCardLibrary</code>は9人のキャラクター一覧、プロフィール、専用カード3種類の領域を構築します。<code>SelectLibraryCharacter</code>が選択中のキャラクター名を保持し、<code>RefreshCharacterLibrary</code>が<code>CardCatalog.Characters</code>の<code>CharacterData.FlavorText</code>、所属・HP・推奨位置・主なRange・5項目の評価・固有効果を人物欄へ表示します。5個の☆ラベルは別Textとして同一x座標へ揃え、<code>CharacterRadarGraphic.SetRatings</code>へ同じ整数値を渡して五角形へ反映します。<code>CharacterData.FlavorText</code>はキャラクターカード一覧の公式人物文であり、3種類の<code>CardData.FlavorText</code>は人物紹介へ連結しません。各アクションカード領域では各カード自身の<code>FlavorText</code>と能力・効果文を表示します。Attack／Barrier複合カードは<code>ConfigureHybridCardHalf</code>が右半分の青色レイヤーを挿入し、文字とクリック判定を前面へ保ちます。画面回転時は<code>AppScreen.CardLibrary</code>を判定してアーカイブ画面を再生成し、<code>_selectedLibraryCharacter</code>を維持します。</p>
 <h3>編成抽選とNPC評価</h3>
 <p><code>BuildRandomRecommendedFormation</code>は9人から前衛・中衛・後衛の全順列を列挙し、各位置の文字を<code>CharacterData.RecommendedPosition</code>に含む重複なし候補だけを残して<code>GameRandom</code>で1組選びます。<code>ApplyRandomRecommendedFormation</code>は通信対戦では自分側、NPC／ローカルでは両側へ適用します。</p>
-<p><code>NpcPlacementScore</code>は従来のAttack・Barrier・Range・Cost基礎点に、射程内対象の有無、撃破可能性、時刻直前の予測HP、同時刻の予測被ダメージ、Barrierによる生存可能性、LOST済み配置の損失、序盤の準備カード、終盤の攻撃を加点・減点します。<code>ChooseNpcTarget</code>は生存かつ射程内を優先し、撃破可能、低HP、将来の配置脅威、距離の順に比較します。<code>NpcTryAlterAct</code>は毎手番で検討し、置換前後の評価差から追加Cost相当を差し引いても閾値を超える場合だけ実行します。</p>
+<p><code>NpcStrength</code>は<code>Weak</code>と<code>Strong</code>を持ち、SOLO編成画面の<code>CycleNpcStrength</code>で切り替えます。初期値は<code>Strong</code>です。<code>WeakNpcPlacementScore</code>と<code>ChooseWeakNpcTarget</code>は従来の基本評価と対象順を保ち、特殊弾、スター、支払い、裏向き配置も従来の選択順を使います。<code>Strong</code>の<code>NpcPlacementScore</code>は候補カードを盤面へ一時的に仮置きし、現在の公開盤面を時刻4まで再計算して、双方の残HPとLOST差を基礎点へ加えます。加えてチャンバーチェック、見切り、特殊弾、スター、ビット・バースト、浮遊、バタフライ、継続ダメージなどの固有効果と前後時点の連携を評価します。<code>ChooseNpcTarget</code>は攻撃の実効値とBarrier、撃破可能性、相手の将来脅威を比較し、見切りは自分を攻撃するカード、曲率の牢獄とざんねんでした！は弱体化の効果が高いカードを優先します。狙撃は射程不足なら電子弾、高Barrierなら量子弾、その他は重力弾を優先します。通常Costは山札へ戻ること、AlterAct専用Costは戻らないことを区別して支払い候補の将来価値を評価し、重複カードや低価値カードから選びます。<code>NpcTryAlterAct</code>は仮置き前後の盤面価値と支払い機会費用を比較し、閾値を超える場合だけ実行します。表向きの合法手がない場合は、予測被ダメージとアイネの石棺を考慮して裏向き配置先を選びます。</p>
 <h3>チュートリアル</h3>
 <p><code>TutorialDialogueBottom</code>は「盤面外」「盤面下部」「盤面中央」「盤面上部」を横画面の4段位置へ変換し、時点指定Cueではキャラクターヘッダーを無効化します。最終クリアCueへ到達した場合は通常会話として再表示せず、そのまま<code>CompleteTutorialStage</code>へ進みます。</p>
-<p><code>AlterActPrototype.Tutorial.cs</code>が基礎4ステージとキャラクター別9ステージを管理します。<code>Resources/Tutorial/tutorial_dialogue.json</code>の基礎33 Cueと<code>Resources/Tutorial/character_trial_design.json</code>のキャラクター109 Cueを読み込み、実行時に13ステージ・142 Cueへ統合します。キャラクター本人の口調や新規台詞を使用せず、キャラクター別データは<code>SYSTEM</code>案内に限定します。全ステージは<code>playerFormation</code>と<code>npcFormation</code>を持ち、<code>InitializeTutorialBattle</code>が通常対戦の状態モデルへ固定手札・初期配置・対象・特殊弾・スター・HP・裏向きSTACKを投入します。旧固定教材盤面の<code>scenarioCells</code>、<code>choiceOptions</code>、<code>correctChoice</code>は使用しません。<code>TutorialZone</code>は受動的な「確認」を<code>Guide</code>へ分類します。<code>BuildTutorialBattleDialogue</code>は大型会話ウィンドウと入力を遮らない暗転レイヤーを生成し、確認Cueでは盤面入力を無効化して「次へ」を表示します。<code>RaiseTutorialConfirmationFocus</code>は対象キャラクター欄・時刻マス・配置済みカード・スター・攻撃矢印だけを暗幕より前へ描画します。配置済みカードが対象の場合は<code>IsTutorialConfirmationCardSlot</code>がそのマスだけを参照可能にし、<code>TryShowTutorialConfirmationCardDetail</code>が通常対戦と同じ<code>ShowBoardCardDetail</code>を呼びます。CARD PREVIEWもsorting order 41で暗幕より前へ出し、参照クリックではCueを進めません。能動操作Cueでは<code>RaiseTutorialBattleFocus</code>が操作可能な実UIへ個別Canvasとシアン枠を付けて暗転より前面へ描画します。設定UIは<code>RaiseSettingsLayer</code>によりSETTINGSボタンをsorting order 900、設定メニューを1000へ固定し、チュートリアル案内を含む他の画面要素より上で入力を受けます。</p>
+<p><code>AlterActPrototype.Tutorial.cs</code>が基礎4ステージとキャラクター別9ステージを管理します。<code>Resources/Tutorial/tutorial_dialogue.json</code>の基礎59 Cueと<code>Resources/Tutorial/character_trial_design.json</code>のキャラクター109 Cueを読み込み、実行時に13ステージ・168 Cueへ統合します。キャラクター本人の口調や新規台詞を使用せず、キャラクター別データは<code>SYSTEM</code>案内に限定します。全ステージは<code>playerFormation</code>と<code>npcFormation</code>を持ち、<code>InitializeTutorialBattle</code>が通常対戦の状態モデルへ固定手札・初期配置・対象・特殊弾・スター・HP・裏向きSTACKを投入します。旧固定教材盤面の<code>scenarioCells</code>、<code>choiceOptions</code>、<code>correctChoice</code>は使用しません。<code>TutorialZone</code>は受動的な「確認」を<code>Guide</code>へ分類します。<code>BuildTutorialBattleDialogue</code>は大型会話ウィンドウと入力を遮らない暗転レイヤーを生成し、確認Cueでは盤面入力を無効化して「次へ」を表示します。<code>RaiseTutorialConfirmationFocus</code>は対象キャラクター欄・時刻マス・配置済みカード・スター・攻撃矢印だけを暗幕より前へ描画します。配置済みカードが対象の場合は<code>IsTutorialConfirmationCardSlot</code>がそのマスだけを参照可能にし、<code>TryShowTutorialConfirmationCardDetail</code>が通常対戦と同じ<code>ShowBoardCardDetail</code>を呼びます。CARD PREVIEWもsorting order 41で暗幕より前へ出し、参照クリックではCueを進めません。能動操作Cueでは<code>RaiseTutorialBattleFocus</code>が操作可能な実UIへ個別Canvasとシアン枠を付けて暗転より前面へ描画します。設定UIは<code>RaiseSettingsLayer</code>によりSETTINGSボタンをsorting order 900、設定メニューを1000へ固定し、チュートリアル案内を含む他の画面要素より上で入力を受けます。</p>
 <p>基礎4レッスンは<code>InitializeTutorialBattle</code>で固定手札・固定初期局面を通常対戦の状態モデルへ投入し、<code>BuildBattleScreen</code>をそのまま構築します。案内は既存のNEXT ACTIONへ表示し、<code>ConfigureTutorialBattleHand</code>、<code>ConfigureTutorialBattleBoard</code>、<code>ConfigureTutorialBattleControls</code>が現在Cueで正しい実UIだけを有効化します。操作は専用の擬似配置へ変換せず、<code>SelectCard</code>、<code>SlotClicked</code>、<code>PlaceCard</code>、<code>TogglePaymentCard</code>、<code>ConfirmPayment</code>、<code>CommitPlacement</code>、<code>SelectTarget</code>を通ります。このため手札・山札・スタック・通常Cost・AlterAct Cost・裏向き・対象・ダメージ予測は通常対戦と同じ処理結果になります。<code>NotifyTutorialBattleAction</code>は処理後の実状態を検査してCueを進めます。受動的な「確認」Cueは<code>Guide</code>へ分類し、確認対象だけをスポットライト表示したまま盤面入力を無効化し、`次へ`で進行させます。</p>
 <p>キャラクター別9トライアルも基礎レッスンと同じ実戦盤面を使用します。109 Cueは、ラプラ＝低Barrierへのヘッドショット／複数被対象へのクリアリング、サキ＝高Barrierへの居合／致命傷への見切り、ヘイゼ＝Range外への電子弾／高Barrierへの量子弾、アイネ＝孤高の棺柩から混沌の領域、ステラ＝味方Attack時点へのスターからShooting Star、マクス＝デモン・チャージの裏向き格納からビット・バーストAlterActの裏向き4枚、リンゴ＝飛躍する果実から落下する果実、ロア＝蝶の羽ばたきから嵐の輪舞曲、シュロ＝早いすいっちおん！とLOST後のざんねんでした！を扱います。各Cueは<code>ConfigureTutorialBattleHand</code>、<code>ConfigureTutorialBattleBoard</code>、<code>ConfigureTutorialBattleControls</code>、<code>ConfigureTutorialTokenChoices</code>で許可する実UIを限定します。入力後は<code>NotifyTutorialBattleAction</code>が配置カード、支払い段階、対象、特殊弾、スター、マクスの格納先と裏向き状態を実データから検査し、達成時だけ次へ進めます。<code>CompleteTutorialStage</code>でステージ別の<code>PlayerPrefs</code>へ保存し、基礎は順次解放、B04完了後に9つのキャラクタートライアルを解放します。</p>
 </section>
@@ -86,7 +86,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 </tbody></table></div>
 <h3>Undoの境界</h3>
 <p>対象・トークン選択中もUndoを許可し、復元時に保留中の選択モードとモーダルを閉じます。デモン・チャージのHP+2は表向きを選んだ時だけ適用し、裏向き選択では効果を発生させません。</p>
-<p><code>TurnActionSnapshot</code>は手札・山札・盤面・積層・対象・トークン・HP・ログ・手番進行を深く複製します。<code>CommitPlacement</code>の直前に<code>SaveUndoSnapshot</code>を呼び、同一手番内の確定操作だけを<code>UndoLastTurnAction</code>で戻します。メモリ・リセットは<code>ShowMemoryResetConfirmation</code>でドロー前に不可逆確認を行い、ドロー後にUndoスタックを消去して見たカードを利用した巻き戻しを防ぎます。通信中は確定後に送信されるため、復帰対象は「途中の選択」ではなく「最後に確定した局面」です。</p>
+<p><code>TurnActionSnapshot</code>は手札・山札・盤面・積層・対象・トークン・HP・ログ・手番進行・乱数状態を深く複製します。<code>CommitPlacement</code>の直前に<code>SaveUndoSnapshot</code>を呼び、同一手番内の確定操作だけを<code>UndoLastTurnAction</code>で戻します。メモリ・リセットは<code>ShowMemoryResetConfirmation</code>でドロー前に不可逆確認を行い、ドロー後にUndoスタックを消去して見たカードを利用した巻き戻しを防ぎます。通信中は確定後に送信されるため、復帰対象は「途中の選択」ではなく「最後に確定した局面」です。</p>
 </section>
 
 <section id="turn" class="orange">
@@ -143,7 +143,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <tr><td><code>server/src/app.mjs</code></td><td><code>createApp(store)</code></td><td>Express、CORS、JSON上限2MB、HTTP API、エラー応答を構築する。</td></tr>
 <tr><td><code>app.mjs</code></td><td><code>randomCode</code> / <code>randomToken</code></td><td>紛らわしい文字を除いた6文字コードと、暗号学的乱数の参加トークンを発行する。</td></tr>
 <tr><td><code>app.mjs</code></td><td><code>roomView</code></td><td>トークンを含めずに返す共通の部屋応答を生成する。作成・参加の直後だけ個別トークンを付与する。</td></tr>
-<tr><td><code>server/src/state-validator.mjs</code></td><td><code>normalizeDeck</code> / <code>validateStatePayload</code></td><td>9人の重複なし編成、状態schema、チーム、カード保存則、盤面座標、積層、対象、HP、トークン供給、相手所有領域の不変条件を検証する。</td></tr>
+<tr><td><code>server/src/state-validator.mjs</code></td><td><code>normalizeDeck</code> / <code>validateStatePayload</code></td><td>9人の重複なし編成、正規初期状態、状態schema、チーム、カード保存則、盤面座標、積層、対象、手番・ラウンド遷移、終了可能時点、HP、トークン供給、相手所有領域の不変条件を検証する。</td></tr>
 <tr><td><code>server/src/room-store.mjs</code></td><td><code>RoomStore</code></td><td><code>REDIS_URL</code>があればRedis、なければローカルJSONファイルを使う保存抽象。</td></tr>
 <tr><td><code>RoomStore.create</code> / <code>compareAndSet</code></td><td><code>SET NX</code> / Lua比較置換</td><td><code>alteract:room:&lt;code&gt;</code>を24時間TTLで保存し、同時要求による二重入室・状態巻き戻しを防ぐ。</td></tr>
 </tbody></table></div>
@@ -152,7 +152,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <tr><td><code>POST /api/rooms</code></td><td>3人の<code>deck</code>、先攻モード</td><td>待機部屋・PLAYER 1トークン・乱数seedを作成。</td><td><code>INVALID_DECK</code></td></tr>
 <tr><td><code>POST /api/rooms/:code/join</code></td><td>3人の<code>deck</code></td><td>PLAYER 2を追加し、先攻と手番を確定。</td><td><code>ROOM_NOT_FOUND</code> / <code>ROOM_FULL</code></td></tr>
 <tr><td><code>GET /api/rooms/:code</code></td><td>参加トークン</td><td>認証後、保存内容を変更せず部屋状態を返却。</td><td><code>INVALID_TOKEN</code> / <code>ROOM_EXPIRED</code></td></tr>
-<tr><td><code>PUT /api/rooms/:code/state</code></td><td>token / expectedVersion / state</td><td>手番・version・状態不変条件を検証し、CASで確定状態を保存。</td><td><code>INVALID_STATE</code> / <code>VERSION_CONFLICT</code> / <code>NOT_YOUR_TURN</code></td></tr>
+<tr><td><code>PUT /api/rooms/:code/state</code></td><td>token / expectedVersion / state</td><td>初回はホストの正規開始局面だけを受理し、以後は手番・version・状態不変条件を検証してCASで確定状態を保存。</td><td><code>INVALID_STATE</code> / <code>HOST_INITIALIZATION_REQUIRED</code> / <code>VERSION_CONFLICT</code> / <code>NOT_YOUR_TURN</code> / <code>MATCH_FINISHED</code> / <code>ROOM_EXPIRED</code></td></tr>
 <tr><td><code>GET /health</code></td><td>なし</td><td>稼働状況と<code>storage: redis|file|memory</code>を返す。</td><td>—</td></tr>
 </tbody></table></div>
 <p>本番はRenderの秘密環境変数<code>REDIS_URL</code>から、東京リージョンのUpstash RedisへTLS接続します。Render再起動および自動再デプロイの後も、保存した部屋・状態・バージョンを取得できることを実測済みです。</p>
@@ -166,7 +166,7 @@ Upstash Redis (Tokyo)         alteract:room:&lt;6文字コード&gt; / TTL 24時
 <li>新しい確定操作を追加する場合は、<code>TurnActionSnapshot</code>、<code>CaptureOnlineGameState</code>、<code>RestoreOnlineGameState</code>の3箇所へ状態を追加します。</li>
 <li>新しいカード効果を追加する場合は、配置時なら<code>ResolvePlacementEffects</code>、時刻解決なら<code>ResolveTime</code>または<code>GetEffectiveStats</code>、盤面表示なら<code>BoardStateSuffix</code>等を更新します。</li>
 <li>通信APIの状態スキーマを破壊的に変える場合は<code>OnlineGameState.schema</code>を上げ、旧スキーマの扱いを決めます。</li>
-<li>Upstash無料DBは長期間アクセスがない場合に休止・アーカイブされる可能性があります。部屋自体は最終アクセスから24時間で意図的に失効します。</li>
+<li>Upstash無料DBは長期間アクセスがない場合に休止・アーカイブされる可能性があります。部屋自体は作成・参加・確定状態保存のうち最後の部屋更新から24時間で意図的に失効します。期限切れ後の参加・保存と、終了済み対戦への再保存は拒否します。</li>
 </ul>
 <h3>確認手順</h3>
 <ol><li>サーバー: <code>node --test</code>でAPI・競合・ヘルスのテストを実行する。</li><li>Unity EditMode: ターン進行、ダメージ、距離、勝敗判定とカード／チュートリアルデータを確認する。</li><li>Unity PlayMode: 本番シーン起動、タイトルから編成・対戦への遷移、配置、Cost、AlterAct、対象指定、ステラのトークン、Undo、最終ターンから結果表示までを確認する。</li><li>通信: 2ブラウザで作成→参加→確定→再読込→復帰を確認する。</li><li>本番: <a href="https://alteract-match.onrender.com/health">/health</a>の<code>storage</code>が<code>redis</code>であることを確認する。</li></ol>
